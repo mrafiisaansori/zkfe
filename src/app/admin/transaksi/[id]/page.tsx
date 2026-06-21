@@ -1,0 +1,90 @@
+'use client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Printer } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Card, CardBody, Button, LoadingState, ErrorState, Badge } from '@/components/ui';
+import { Receipt } from '@/components/pos/Receipt';
+import { penjualanService, getErrorMessage } from '@/services';
+import type { Penjualan } from '@/types';
+import { formatRupiah, formatDate } from '@/utils/format';
+import { usePageLoading } from '@/hooks/usePageLoading';
+
+export default function DetailTransaksiPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const [trx, setTrx] = useState<Penjualan | null>(null);
+  const [loading, setLoading] = useState(true);
+  usePageLoading(loading);
+  const [error, setError] = useState('');
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true); setError('');
+    try { setTrx(await penjualanService.getById(Number(id))); }
+    catch (err) { setError(getErrorMessage(err)); }
+    finally { setLoading(false); }
+  }, [id]);
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return <LoadingState />;
+  if (error) return <ErrorState message={error} onRetry={load} />;
+  if (!trx) return null;
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <Button variant="ghost" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /> Kembali</Button>
+        <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" /> Cetak struk</Button>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2"><CardBody>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-800">Nota #{String(trx.ID).padStart(6, '0')}</h2>
+              <p className="text-sm text-slate-500">{formatDate(trx.TANGGAL)} {trx.JAM}</p>
+            </div>
+            <Badge tone={trx.STATUS === 1 ? 'green' : 'red'}>{trx.STATUS === 1 ? 'Sah' : 'Batal'}</Badge>
+          </div>
+          <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+            <div><p className="text-slate-400">Kasir</p><p className="font-medium">{trx.kasir?.NAMA ?? '-'}</p></div>
+            <div><p className="text-slate-400">Metode bayar</p><p className="font-medium">{trx.jenisBayar?.NAMA ?? '-'}</p></div>
+            <div>
+              <p className="text-slate-400">Status bayar</p>
+              <Badge tone="green">{trx.STATUS_BAYAR || 'LUNAS'}</Badge>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead><tr className="border-b text-xs uppercase text-slate-500">
+                <th className="py-2">Produk</th><th className="py-2 text-right">Harga</th><th className="py-2 text-center">Qty</th><th className="py-2 text-right">Subtotal</th>
+              </tr></thead>
+              <tbody>
+                {trx.detail?.map((d) => (
+                  <tr key={d.ID} className="border-b border-slate-100">
+                    <td className="py-2">{d.produk?.NAMA ?? `#${d.ID_PRODUK}`}</td>
+                    <td className="py-2 text-right">{formatRupiah(d.HARGA_JUAL)}</td>
+                    <td className="py-2 text-center">{d.QTY}</td>
+                    <td className="py-2 text-right font-medium">{formatRupiah(d.HARGA_JUAL * d.QTY)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 flex flex-col items-end gap-1 text-sm">
+            {Number(trx.DISKON) > 0 && <p className="text-slate-500">Diskon: {formatRupiah(trx.DISKON)}</p>}
+            <p className="text-lg font-bold text-brand-600">Total: {formatRupiah(trx.TOTAL)}</p>
+          </div>
+        </CardBody></Card>
+
+        <Card><CardBody>
+          <h3 className="mb-3 font-semibold text-slate-800">Preview Struk</h3>
+          <div id="print-area" className="rounded-lg border border-dashed border-slate-200">
+            <Receipt ref={printRef} trx={trx} />
+          </div>
+        </CardBody></Card>
+      </div>
+    </div>
+  );
+}

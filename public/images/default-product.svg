@@ -1,0 +1,28 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Tidak ada foto produk">
+  <!-- Background soft blue-white (brand) -->
+  <rect width="512" height="512" rx="72" fill="#F1F7FB"/>
+  <rect x="10" y="10" width="492" height="492" rx="64" fill="#FFFFFF" fill-opacity="0.5"/>
+
+  <!-- Soft brand shapes, opacity rendah -->
+  <circle cx="436" cy="84" r="70" fill="#90E0EF" fill-opacity="0.35"/>
+  <circle cx="78" cy="438" r="86" fill="#00B4D8" fill-opacity="0.12"/>
+
+  <!-- Image frame -->
+  <rect x="126" y="126" width="260" height="260" rx="44" fill="#FFFFFF" stroke="#E3EDF3" stroke-width="6"/>
+
+  <clipPath id="frameClip">
+    <rect x="129" y="129" width="254" height="254" rx="41"/>
+  </clipPath>
+
+  <g clip-path="url(#frameClip)">
+    <!-- Sun -->
+    <circle cx="196" cy="200" r="26" fill="#00B4D8"/>
+    <!-- Back mountain -->
+    <path d="M236 386 L312 280 L386 386 Z" fill="#90E0EF"/>
+    <!-- Front mountain -->
+    <path d="M129 386 L226 252 L323 386 Z" fill="#0077B6"/>
+  </g>
+
+  <!-- Dotted hint line below frame -->
+  <path d="M196 420 H316" stroke="#CBD9E6" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 26"/>
+</svg>

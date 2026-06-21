@@ -1,0 +1,32 @@
+<svg width="720" height="720" viewBox="0 0 720 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="720" rx="40" fill="#DFF3F5"/>
+  <path d="M0 0H720V255C635 276 589 342 493 318C376 288 353 145 241 156C147 165 91 241 0 220V0Z" fill="#0A6CB0"/>
+  <path d="M84 94C136 58 209 51 269 77C329 103 377 163 447 158C507 154 563 105 636 119C621 74 582 39 529 26H84V94Z" fill="#00A3CC" opacity=".62"/>
+  <circle cx="96" cy="594" r="86" fill="#B3DCEB" opacity=".7"/>
+  <circle cx="612" cy="540" r="116" fill="#EEF6FB" opacity=".85"/>
+  <rect x="118" y="217" width="484" height="318" rx="30" fill="white" filter="url(#shadow)"/>
+  <rect x="152" y="253" width="244" height="156" rx="22" fill="#EEF6FB"/>
+  <rect x="173" y="277" width="202" height="20" rx="10" fill="#B3DCEB"/>
+  <rect x="173" y="318" width="72" height="58" rx="16" fill="white"/>
+  <rect x="263" y="318" width="92" height="58" rx="16" fill="white"/>
+  <rect x="173" y="393" width="182" height="8" rx="4" fill="#D6EBF5"/>
+  <rect x="424" y="255" width="130" height="188" rx="26" fill="#0A2540"/>
+  <rect x="441" y="275" width="96" height="132" rx="16" fill="#EEF6FB"/>
+  <rect x="462" y="295" width="54" height="12" rx="6" fill="#7FC4DD"/>
+  <rect x="459" y="323" width="60" height="60" rx="14" fill="white"/>
+  <path d="M472 344H506M472 360H506M489 327V376" stroke="#0A6CB0" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="489" cy="426" r="9" fill="#00A3CC"/>
+  <rect x="186" y="457" width="238" height="60" rx="18" fill="#EEF6FB"/>
+  <rect x="206" y="477" width="104" height="10" rx="5" fill="#B3DCEB"/>
+  <rect x="206" y="495" width="64" height="8" rx="4" fill="#D6EBF5"/>
+  <rect x="338" y="470" width="66" height="34" rx="15" fill="#0A6CB0"/>
+  <path d="M356 487H386M371 472V502" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  <rect x="441" y="457" width="113" height="60" rx="18" fill="#0A6CB0" opacity=".12"/>
+  <rect x="459" y="477" width="60" height="10" rx="5" fill="#0A6CB0" opacity=".55"/>
+  <rect x="459" y="495" width="40" height="8" rx="4" fill="#0A6CB0" opacity=".4"/>
+  <defs>
+    <filter id="shadow" x="78" y="187" width="564" height="398" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#0A2540" flood-opacity="0.16"/>
+    </filter>
+  </defs>
+</svg>

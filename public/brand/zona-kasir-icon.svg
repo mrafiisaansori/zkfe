@@ -1,0 +1,30 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="zk_bg" x1="256" y1="0" x2="256" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A82CE"/>
+      <stop offset="1" stop-color="#15A7E0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded app-icon background -->
+  <rect width="512" height="512" rx="116" fill="url(#zk_bg)"/>
+
+  <!-- White Z (rounded stroke) -->
+  <path d="M150 150 H362 L150 372 H360"
+        fill="none" stroke="#ffffff" stroke-width="62"
+        stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Keypad: white rounded square with 3x3 grid of blue dots -->
+  <rect x="298" y="316" width="96" height="96" rx="24" fill="#ffffff"/>
+  <g fill="#1A8BD0">
+    <rect x="315" y="333" width="15" height="15" rx="4"/>
+    <rect x="338.5" y="333" width="15" height="15" rx="4"/>
+    <rect x="362" y="333" width="15" height="15" rx="4"/>
+    <rect x="315" y="356.5" width="15" height="15" rx="4"/>
+    <rect x="338.5" y="356.5" width="15" height="15" rx="4"/>
+    <rect x="362" y="356.5" width="15" height="15" rx="4"/>
+    <rect x="315" y="380" width="15" height="15" rx="4"/>
+    <rect x="338.5" y="380" width="15" height="15" rx="4"/>
+    <rect x="362" y="380" width="15" height="15" rx="4"/>
+  </g>
+</svg>
