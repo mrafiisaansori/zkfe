@@ -1,12 +1,12 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { ArrowLeft, ArrowRight, Building2, Check, MapPin, ShieldCheck, Store, UserRound, type LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
-import { Button, Input, PasswordInput, SelectMenu, Turnstile, turnstileEnabled } from '@/components/ui';
+import { Button, Input, PasswordInput, SelectMenu, Turnstile, turnstileEnabled, type TurnstileHandle } from '@/components/ui';
 import { cn } from '@/utils/cn';
 import { authService, getErrorMessage, wilayahService } from '@/services';
 import type { Kota, Provinsi } from '@/types';
@@ -159,6 +159,7 @@ export default function RegisterPage() {
   const [loadingKota, setLoadingKota] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [captcha, setCaptcha] = useState('');
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
   const { register, handleSubmit, watch, trigger, formState: { errors } } = useForm<FormData>({ mode: 'onTouched' });
 
@@ -178,6 +179,7 @@ export default function RegisterPage() {
   }, [provId]);
 
   async function onSubmit(data: FormData) {
+    if (loading) return; // cegah double submit
     if (!provId) { toast.error('Pilih provinsi'); return; }
     if (!kotaId) { toast.error('Pilih kota/kabupaten'); return; }
     if (!kategori) { toast.error('Pilih kategori usaha'); return; }
@@ -194,6 +196,8 @@ export default function RegisterPage() {
       router.push(`/verify-otp?email=${encodeURIComponent(data.email)}`);
     } catch (err) {
       setLoading(false);
+      turnstileRef.current?.reset();
+      setCaptcha('');
       toast.error(getErrorMessage(err));
     }
   }
@@ -307,7 +311,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {isLastStep && <div className="pt-3"><Turnstile onToken={setCaptcha} /></div>}
+          {isLastStep && <div className="pt-3"><Turnstile ref={turnstileRef} onToken={setCaptcha} /></div>}
 
           <div className="sticky bottom-0 -mx-5 flex flex-col-reverse gap-3 border-t border-line bg-white/95 px-5 pb-1 pt-4 backdrop-blur sm:static sm:mx-0 sm:flex-row sm:items-center sm:justify-between sm:bg-transparent sm:px-0 sm:pb-0 sm:pt-5 sm:backdrop-blur-0">
             <Button

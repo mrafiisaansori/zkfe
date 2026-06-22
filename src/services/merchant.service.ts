@@ -23,6 +23,12 @@ export const merchantService = {
   getById: (id: number) => get<Merchant>(`/merchant/${id}`),
   updateStatus: (id: number, status: string) => put<Merchant>(`/merchant/${id}/status`, { status }),
 
+  // Super admin: set plan PRO/FREE manual + riwayat perubahan.
+  setPlan: (id: number, data: { plan: 'FREE' | 'PRO'; pro_starts_at?: string | null; pro_expires_at?: string | null; note?: string }) =>
+    put<Merchant>(`/merchant/${id}/plan`, data),
+  planHistory: (id: number) =>
+    get<Array<{ ID: number; OLD_PLAN: string; NEW_PLAN: string; PRO_STARTS_AT: string | null; PRO_EXPIRES_AT: string | null; NOTE: string | null; SOURCE: string; CREATED_AT: string }>>(`/merchant/${id}/plan-history`),
+
   // Pemantauan detail per merchant (super admin, read-only)
   monitorDashboard: (id: number) => get<MerchantDashboard>(`/merchant/${id}/dashboard`),
   monitorProduk: (id: number, search?: string) =>

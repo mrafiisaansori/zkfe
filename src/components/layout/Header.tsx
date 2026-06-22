@@ -3,6 +3,7 @@ import { LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { BrandLogo } from './BrandLogo';
 import { MobileMenu } from './MobileMenu';
+import { AccountMenu } from './AccountMenu';
 
 export function Header({ title }: { title?: string }) {
   const { user, signOut, signingOut } = useAuth();
@@ -30,6 +31,7 @@ export function Header({ title }: { title?: string }) {
           </span>
           <span className="text-sm font-medium text-slate-700">{user?.nama}</span>
         </div>
+        <AccountMenu />
         <button
           onClick={signOut}
           disabled={signingOut}

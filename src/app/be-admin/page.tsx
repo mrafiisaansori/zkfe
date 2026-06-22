@@ -1,8 +1,7 @@
 'use client';
 import { useRef, useState } from 'react';
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
-import { ArrowRight, Eye, EyeOff, Lock, User } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
 import { Button, Turnstile, turnstileEnabled, type TurnstileHandle } from '@/components/ui';
@@ -10,7 +9,11 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface FormData { username: string; password: string; }
 
-export default function LoginPage() {
+/**
+ * Login khusus Super Admin (URL terpisah dari merchant untuk keamanan).
+ * Akun non-super-admin yang login di sini akan ditolak.
+ */
+export default function BeAdminLoginPage() {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
@@ -19,13 +22,12 @@ export default function LoginPage() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>();
 
   async function onSubmit(data: FormData) {
-    if (loading) return; // cegah double submit
+    if (loading) return;
     if (turnstileEnabled && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
     setLoading(true);
-    const res = await login(data.username, data.password, captcha, 'merchant');
+    const res = await login(data.username, data.password, captcha, 'superadmin');
     if (!res.ok) {
       setLoading(false);
-      // Token Turnstile sekali pakai -> reset agar submit ulang dapat token baru.
       turnstileRef.current?.reset();
       setCaptcha('');
       toast.error(res.message || 'Login gagal');
@@ -34,15 +36,15 @@ export default function LoginPage() {
 
   return (
     <AuthShell maxWidth="md">
-      <AuthLoadingOverlay show={loading} label="Sedang masuk ke akun..." />
+      <AuthLoadingOverlay show={loading} label="Masuk sebagai Super Admin..." />
       <div>
         <div className="mb-7">
-          <p className="mb-2 inline-flex rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-primary">
-            Zona Kasir Merchant
+          <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-ink px-3 py-1 text-xs font-semibold text-white">
+            <ShieldCheck className="h-3.5 w-3.5" /> Backend Admin
           </p>
-          <h2 className="text-3xl font-semibold tracking-tight text-ink">Selamat datang</h2>
+          <h2 className="text-3xl font-semibold tracking-tight text-ink">Login Super Admin</h2>
           <p className="mt-1.5 text-sm leading-6 text-slate-500">
-            Masuk untuk melanjutkan transaksi, memantau stok, dan mengelola toko.
+            Halaman khusus pengelola Zona Kasir. Akun merchant tidak dapat masuk di sini.
           </p>
         </div>
 
@@ -53,8 +55,8 @@ export default function LoginPage() {
               <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <input
                 {...register('username', { required: 'Username wajib diisi' })}
-                placeholder="Masukkan username"
-                className={`h-12 w-full rounded-2xl border bg-white pl-10 pr-4 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 hover:border-brand-300 focus:border-primary focus:ring-2 focus:ring-accent/25 ${errors.username ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : 'border-line'}`}
+                placeholder="Username super admin"
+                className={`h-12 w-full rounded-2xl border bg-white pl-10 pr-4 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 hover:border-brand-300 focus:border-primary focus:ring-2 focus:ring-accent/25 ${errors.username ? 'border-rose-400' : 'border-line'}`}
               />
             </div>
             {errors.username && <p className="mt-1.5 text-xs font-medium text-rose-600">{errors.username.message}</p>}
@@ -68,39 +70,22 @@ export default function LoginPage() {
                 {...register('password', { required: 'Password wajib diisi' })}
                 type={showPass ? 'text' : 'password'}
                 placeholder="Masukkan password"
-                className={`h-12 w-full rounded-2xl border bg-white pl-10 pr-11 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 hover:border-brand-300 focus:border-primary focus:ring-2 focus:ring-accent/25 ${errors.password ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-100' : 'border-line'}`}
+                className={`h-12 w-full rounded-2xl border bg-white pl-10 pr-11 text-sm text-slate-800 outline-none transition-all placeholder:text-slate-400 hover:border-brand-300 focus:border-primary focus:ring-2 focus:ring-accent/25 ${errors.password ? 'border-rose-400' : 'border-line'}`}
               />
-              <button
-                type="button"
-                onClick={() => setShowPass((s) => !s)}
-                aria-label={showPass ? 'Sembunyikan password' : 'Tampilkan password'}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-              >
+              <button type="button" onClick={() => setShowPass((s) => !s)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-xl p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
                 {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
             {errors.password && <p className="mt-1.5 text-xs font-medium text-rose-600">{errors.password.message}</p>}
           </div>
 
-          <div className="flex justify-end">
-            <Link href="/forgot-password" className="text-sm font-semibold text-primary transition-colors hover:text-brand-700 hover:underline">
-              Lupa Password?
-            </Link>
-          </div>
-
           <Turnstile ref={turnstileRef} onToken={setCaptcha} />
 
           <Button type="submit" variant="gradient" size="lg" loading={loading} className="h-12 w-full rounded-xl text-base font-semibold">
-            {loading ? 'Sedang masuk...' : <>Masuk <ArrowRight className="h-4 w-4" /></>}
+            {loading ? 'Memproses...' : <>Masuk <ArrowRight className="h-4 w-4" /></>}
           </Button>
         </form>
-
-        <p className="mt-6 text-center text-sm text-slate-500">
-          Belum punya akun?{' '}
-          <Link href="/register" className="font-semibold text-primary transition-colors hover:text-brand-700 hover:underline">
-            Daftar Merchant
-          </Link>
-        </p>
       </div>
     </AuthShell>
   );

@@ -1,11 +1,11 @@
 'use client';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowRight, MailCheck, RotateCcw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
-import { Button, Input, Turnstile, turnstileEnabled } from '@/components/ui';
+import { Button, Input, Turnstile, turnstileEnabled, type TurnstileHandle } from '@/components/ui';
 import { authService, getErrorMessage } from '@/services';
 
 function VerifyOtpInner() {
@@ -17,6 +17,7 @@ function VerifyOtpInner() {
   const [resending, setResending] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [captcha, setCaptcha] = useState('');
+  const turnstileRef = useRef<TurnstileHandle>(null);
 
   useEffect(() => { setEmail(params.get('email') || ''); }, [params]);
 
@@ -29,6 +30,7 @@ function VerifyOtpInner() {
   async function onVerify(e: React.FormEvent) {
     e.preventDefault();
     if (!/^\d{6}$/.test(otp)) { toast.error('Masukkan 6 digit OTP'); return; }
+    if (loading) return; // cegah double submit
     if (turnstileEnabled && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
     setLoading(true);
     try {
@@ -37,18 +39,22 @@ function VerifyOtpInner() {
       router.push('/login');
     } catch (err) {
       setLoading(false);
+      turnstileRef.current?.reset();
+      setCaptcha('');
       toast.error(getErrorMessage(err));
     }
   }
 
   async function onResend() {
-    if (cooldown > 0) return;
+    if (cooldown > 0 || resending) return;
     setResending(true);
     try {
       const res = await authService.resendOtp(email, captcha);
       toast.success('OTP baru telah dikirim');
       setCooldown(res.cooldown || 60);
     } catch (err) {
+      turnstileRef.current?.reset();
+      setCaptcha('');
       toast.error(getErrorMessage(err));
     } finally {
       setResending(false);
@@ -93,7 +99,7 @@ function VerifyOtpInner() {
             placeholder="000000"
             className="h-14 text-center text-xl font-semibold tracking-[0.45em]"
           />
-          <Turnstile onToken={setCaptcha} />
+          <Turnstile ref={turnstileRef} onToken={setCaptcha} />
           <Button type="submit" variant="gradient" size="lg" loading={loading} className="h-12 w-full rounded-xl text-base font-semibold">
             {loading ? 'Memverifikasi OTP...' : <>Verifikasi <ArrowRight className="h-4 w-4" /></>}
           </Button>

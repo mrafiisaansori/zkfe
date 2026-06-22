@@ -85,13 +85,13 @@ export default function PublicCatalogPage() {
         {/* ===== Kartu identitas toko (di bawah banner, tidak menumpuk) ===== */}
         <div className="px-4 sm:px-0">
           <div className="relative -mt-10 rounded-3xl border border-line bg-white p-5 shadow-premium">
-            <div className="flex items-start gap-4">
+            <div className="flex flex-col items-center gap-3 text-center sm:flex-row sm:items-center sm:gap-4 sm:text-left">
               <StoreAvatar
                 src={cat.toko?.logo_url}
                 name={storeName}
-                className="-mt-12 h-20 w-20 shrink-0 rounded-2xl border-4 border-white bg-white shadow-card sm:h-24 sm:w-24"
+                className="-mt-16 aspect-square h-24 w-24 shrink-0 overflow-hidden rounded-2xl border-4 border-white bg-white shadow-card sm:-mt-14"
               />
-              <div className="min-w-0 flex-1 pt-0.5">
+              <div className="min-w-0 flex-1">
                 <h1 className="truncate text-xl font-black leading-tight text-slate-900 sm:text-2xl">{storeName}</h1>
                 <span className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-2.5 py-0.5 text-xs font-semibold text-success">
                   <span className="h-1.5 w-1.5 rounded-full bg-success" /> Buka &amp; siap melayani

@@ -1,5 +1,6 @@
 export * from './api';
 export * from './auth.service';
+export * from './account.service';
 export * from './produk.service';
 export * from './kategori.service';
 export * from './pengguna.service';
