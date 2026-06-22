@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { KeyRound, Mail, UserCog } from 'lucide-react';
+import { KeyRound, Mail, UserCog, ShieldCheck, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Modal, Input, PasswordInput, Button } from '@/components/ui';
 import { accountService, getErrorMessage } from '@/services';
@@ -14,12 +14,13 @@ export function AccountMenu({ compact }: { compact?: boolean }) {
   const user = useAuthStore((s) => s.user);
   const isAdmin = user?.role === 'admin';
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<'password' | 'email'>('password');
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => { setTab('password'); setOpen(true); }}
         title="Pengaturan akun"
         className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-line bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
       >
@@ -28,12 +29,44 @@ export function AccountMenu({ compact }: { compact?: boolean }) {
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="Pengaturan Akun" size="sm">
-        <div className="space-y-6">
-          <ChangePasswordSection />
-          {isAdmin && <div className="border-t border-line pt-5"><ChangeEmailSection /></div>}
+        <div className="space-y-4">
+          {/* Identitas akun */}
+          <div className="flex items-center gap-3 rounded-2xl bg-brand-50 p-3">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-base font-bold text-white">
+              {(user?.nama ?? '?').charAt(0).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-slate-800">{user?.nama}</p>
+              <p className="text-xs capitalize text-slate-500">{user?.role === 'admin' ? 'Admin Merchant' : user?.role}</p>
+            </div>
+          </div>
+
+          {/* Tab switcher (hanya admin yang punya menu email) */}
+          {isAdmin && (
+            <div className="flex gap-1 rounded-xl bg-canvas p-1">
+              <TabButton active={tab === 'password'} onClick={() => setTab('password')} icon={<KeyRound className="h-4 w-4" />} label="Password" />
+              <TabButton active={tab === 'email'} onClick={() => setTab('email')} icon={<Mail className="h-4 w-4" />} label="Email" />
+            </div>
+          )}
+
+          {tab === 'password' || !isAdmin ? <ChangePasswordSection /> : <ChangeEmailSection />}
         </div>
       </Modal>
     </>
+  );
+}
+
+function TabButton({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-semibold transition-colors ${
+        active ? 'bg-white text-primary shadow-card' : 'text-slate-500 hover:text-slate-700'
+      }`}
+    >
+      {icon} {label}
+    </button>
   );
 }
 
@@ -42,6 +75,9 @@ function ChangePasswordSection() {
   const [newPass, setNewPass] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const tooShort = newPass.length > 0 && newPass.length < 6;
+  const mismatch = confirm.length > 0 && confirm !== newPass;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -57,14 +93,25 @@ function ChangePasswordSection() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-3">
-      <p className="flex items-center gap-2 text-sm font-semibold text-slate-700"><KeyRound className="h-4 w-4 text-primary" /> Ubah Password</p>
-      <PasswordInput label="Password lama" value={oldPass} onChange={(e) => setOldPass(e.target.value)} />
-      <PasswordInput label="Password baru" value={newPass} onChange={(e) => setNewPass(e.target.value)} />
-      <PasswordInput label="Konfirmasi password baru" value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-      <div className="flex justify-end">
-        <Button type="submit" loading={loading} disabled={!oldPass || !newPass || !confirm}>Simpan password</Button>
+    <form onSubmit={submit} className="space-y-3.5">
+      <div className="flex items-start gap-2.5 rounded-xl border border-line bg-white p-3">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <p className="text-xs leading-5 text-slate-500">Gunakan password yang kuat dan tidak dipakai di tempat lain. Minimal 6 karakter.</p>
       </div>
+
+      <PasswordInput label="Password lama" value={oldPass} onChange={(e) => setOldPass(e.target.value)} placeholder="Password saat ini" />
+      <div>
+        <PasswordInput label="Password baru" value={newPass} onChange={(e) => setNewPass(e.target.value)} placeholder="Minimal 6 karakter" />
+        {tooShort && <p className="mt-1 text-xs font-medium text-rose-600">Minimal 6 karakter</p>}
+      </div>
+      <div>
+        <PasswordInput label="Konfirmasi password baru" value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="Ulangi password baru" />
+        {mismatch && <p className="mt-1 text-xs font-medium text-rose-600">Konfirmasi tidak cocok</p>}
+      </div>
+
+      <Button type="submit" loading={loading} disabled={!oldPass || !newPass || !confirm || tooShort || mismatch} className="w-full">
+        Simpan Password
+      </Button>
     </form>
   );
 }
@@ -120,41 +167,46 @@ function ChangeEmailSection() {
     finally { setResending(false); }
   }
 
+  if (step === 'otp') {
+    return (
+      <form onSubmit={verify} className="space-y-3.5">
+        <div className="flex items-start gap-2.5 rounded-xl bg-brand-50 p-3">
+          <Mail className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+          <p className="text-xs leading-5 text-slate-600">Masukkan 6 digit OTP yang dikirim ke <b className="break-all">{newEmail}</b>.</p>
+        </div>
+        <Input
+          label="Kode OTP"
+          inputMode="numeric"
+          value={otp}
+          onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          placeholder="000000"
+          className="text-center text-lg font-semibold tracking-[0.4em]"
+        />
+        <div className="flex items-center justify-between text-xs">
+          <button type="button" onClick={resend} disabled={cooldown > 0 || resending}
+            className="font-semibold text-primary disabled:cursor-not-allowed disabled:text-slate-400">
+            {cooldown > 0 ? `Kirim ulang (${cooldown}s)` : resending ? 'Mengirim...' : 'Kirim ulang OTP'}
+          </button>
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={() => setStep('form')} disabled={loading} className="flex-1">
+            <ArrowLeft className="h-4 w-4" /> Kembali
+          </Button>
+          <Button type="submit" loading={loading} disabled={otp.length !== 6} className="flex-1">Verifikasi</Button>
+        </div>
+      </form>
+    );
+  }
+
   return (
-    <div className="space-y-3">
-      <p className="flex items-center gap-2 text-sm font-semibold text-slate-700"><Mail className="h-4 w-4 text-primary" /> Ganti Email Toko</p>
-      {step === 'form' ? (
-        <form onSubmit={request} className="space-y-3">
-          <PasswordInput label="Password saat ini" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Input label="Email baru" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email-baru@domain.com" />
-          <p className="text-xs text-slate-400">Kode OTP akan dikirim ke email baru. Email hanya berubah setelah OTP benar.</p>
-          <div className="flex justify-end">
-            <Button type="submit" loading={loading} disabled={!password || !newEmail}>Kirim OTP</Button>
-          </div>
-        </form>
-      ) : (
-        <form onSubmit={verify} className="space-y-3">
-          <p className="text-xs text-slate-500">Masukkan 6 digit OTP yang dikirim ke <b>{newEmail}</b>.</p>
-          <Input
-            label="Kode OTP"
-            inputMode="numeric"
-            value={otp}
-            onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-            placeholder="000000"
-            className="text-center text-lg font-semibold tracking-[0.4em]"
-          />
-          <div className="flex items-center justify-between">
-            <button type="button" onClick={resend} disabled={cooldown > 0 || resending}
-              className="text-xs font-semibold text-primary disabled:cursor-not-allowed disabled:text-slate-400">
-              {cooldown > 0 ? `Kirim ulang (${cooldown}s)` : resending ? 'Mengirim...' : 'Kirim ulang OTP'}
-            </button>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" onClick={() => setStep('form')} disabled={loading}>Kembali</Button>
-              <Button type="submit" loading={loading} disabled={otp.length !== 6}>Verifikasi</Button>
-            </div>
-          </div>
-        </form>
-      )}
-    </div>
+    <form onSubmit={request} className="space-y-3.5">
+      <div className="flex items-start gap-2.5 rounded-xl border border-line bg-white p-3">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+        <p className="text-xs leading-5 text-slate-500">Kode OTP dikirim ke email baru. Email hanya berubah setelah password benar &amp; OTP valid.</p>
+      </div>
+      <PasswordInput label="Password saat ini" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Verifikasi identitas Anda" />
+      <Input label="Email baru" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="email-baru@domain.com" />
+      <Button type="submit" loading={loading} disabled={!password || !newEmail} className="w-full">Kirim OTP ke Email Baru</Button>
+    </form>
   );
 }

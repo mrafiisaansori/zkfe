@@ -84,7 +84,6 @@ export default function PengaturanPage() {
                 <Input label="Nama toko" {...register('nama')} />
                 <Input label="Alamat" {...register('alamat')} />
                 <Input label="No. Telp" {...register('no_telp')} />
-                <Input label="Email" {...register('email')} />
                 <Input label="Website" {...register('website')} />
                 <div className="flex justify-end pt-2">
                   <Button type="submit" loading={saving}><Save className="h-4 w-4" /> Simpan</Button>
