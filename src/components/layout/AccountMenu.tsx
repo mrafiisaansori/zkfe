@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { KeyRound, Mail, UserCog, ShieldCheck, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Modal, Input, PasswordInput, Button } from '@/components/ui';
@@ -15,20 +16,13 @@ export function AccountMenu({ compact }: { compact?: boolean }) {
   const isAdmin = user?.role === 'admin';
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<'password' | 'email'>('password');
+  // Portal: hindari modal "terjebak" di dalam Header yang memakai backdrop-blur
+  // (filter membuat containing block untuk position:fixed).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => { setTab('password'); setOpen(true); }}
-        title="Pengaturan akun"
-        className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-line bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
-      >
-        <UserCog className="h-4 w-4" />
-        {!compact && <span className="hidden sm:inline">Akun</span>}
-      </button>
-
-      <Modal open={open} onClose={() => setOpen(false)} title="Pengaturan Akun" size="sm">
+  const modal = (
+    <Modal open={open} onClose={() => setOpen(false)} title="Pengaturan Akun" size="sm">
         <div className="space-y-4">
           {/* Identitas akun */}
           <div className="flex items-center gap-3 rounded-2xl bg-brand-50 p-3">
@@ -51,7 +45,21 @@ export function AccountMenu({ compact }: { compact?: boolean }) {
 
           {tab === 'password' || !isAdmin ? <ChangePasswordSection /> : <ChangeEmailSection />}
         </div>
-      </Modal>
+    </Modal>
+  );
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => { setTab('password'); setOpen(true); }}
+        title="Pengaturan akun"
+        className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-line bg-white px-3 text-sm font-medium text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+      >
+        <UserCog className="h-4 w-4" />
+        {!compact && <span className="hidden sm:inline">Akun</span>}
+      </button>
+      {mounted && open ? createPortal(modal, document.body) : null}
     </>
   );
 }
