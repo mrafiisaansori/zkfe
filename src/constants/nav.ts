@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, Tags, Boxes, Users, Receipt, BarChart3,
   Settings, ShoppingCart, History, QrCode, Store, ClipboardList,
-  TicketPercent, CreditCard, Layers, type LucideIcon,
+  TicketPercent, CreditCard, Layers, Truck, Undo2, Contact, type LucideIcon,
 } from 'lucide-react';
 import type { Role } from '@/types';
 
@@ -18,6 +18,9 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Kategori', href: '/admin/kategori', icon: Tags, roles: ['admin'] },
   { label: 'Varian', href: '/admin/modifier', icon: Layers, roles: ['admin'] },
   { label: 'Stok', href: '/admin/stok', icon: Boxes, roles: ['admin'] },
+  { label: 'Supplier', href: '/admin/supplier', icon: Contact, roles: ['admin'] },
+  { label: 'Pembelian', href: '/admin/pembelian', icon: Truck, roles: ['admin'] },
+  { label: 'Retur Barang', href: '/admin/retur', icon: Undo2, roles: ['admin'] },
   { label: 'Pengguna', href: '/admin/user', icon: Users, roles: ['admin'] },
   { label: 'Voucher', href: '/admin/voucher', icon: TicketPercent, roles: ['admin'] },
   // QR Menu (pesan dari meja) dinonaktifkan sementara — aktifkan lagi dengan

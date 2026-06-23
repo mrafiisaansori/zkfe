@@ -18,4 +18,7 @@ export * from './dashboard.service';
 export * from './identitas.service';
 export * from './qris.service';
 export * from './merchant.service';
+export * from './supplier.service';
+export * from './pembelian.service';
+export * from './retur.service';
 export * from './wilayah.service';

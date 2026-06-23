@@ -4,7 +4,17 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 // Site key di-inject saat build (NEXT_PUBLIC_*). Kosong = Turnstile NONAKTIF
 // (mis. di lokal). Set hanya di production agar widget hanya muncul di cloud.
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
-export const turnstileEnabled = !!SITE_KEY;
+
+// Nonaktifkan Turnstile saat diakses dari localhost / dev lokal agar tidak
+// mengganggu development & testing. Production tetap aktif.
+function isLocalHost() {
+  if (typeof window === 'undefined') return false;
+  const h = window.location.hostname;
+  return h === 'localhost' || h === '127.0.0.1' || h === '::1'
+    || h.endsWith('.local') || h.endsWith('.localhost');
+}
+
+export const turnstileEnabled = !!SITE_KEY && !isLocalHost();
 
 declare global {
   interface Window { turnstile?: { render: (el: HTMLElement, opts: Record<string, unknown>) => string; remove: (id: string) => void; reset: (id?: string) => void } }
@@ -38,7 +48,7 @@ export const Turnstile = forwardRef<TurnstileHandle, { onToken: (token: string) 
     }), [onToken]);
 
     useEffect(() => {
-      if (!SITE_KEY) return undefined;
+      if (!SITE_KEY || isLocalHost()) return undefined;
       let cancelled = false;
 
       const render = () => {
@@ -72,7 +82,7 @@ export const Turnstile = forwardRef<TurnstileHandle, { onToken: (token: string) 
       };
     }, [onToken]);
 
-    if (!SITE_KEY) return null;
+    if (!SITE_KEY || isLocalHost()) return null;
     return <div ref={elRef} className="my-1 flex justify-center" />;
   },
 );
