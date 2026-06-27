@@ -1,4 +1,4 @@
-import { get, post, put, del, postForm, putForm, api } from './api';
+import { get, getWithMeta, post, put, del, postForm, putForm, api, type ApiDataWithMeta, type PaginationMeta } from './api';
 import type { Produk, RekamStok } from '@/types';
 
 export interface ImportRow { row: number; nama: string; status: 'sukses' | 'gagal' | 'siap'; message: string }
@@ -11,6 +11,12 @@ export interface ProdukInput {
   harga_beli: number;
   harga_jual: number;
   barcode?: string;
+}
+export interface ProdukListParams {
+  search?: string;
+  category_id?: number | 'all';
+  page?: number;
+  limit?: number;
 }
 
 // Bangun FormData untuk upload multipart (data + file gambar opsional).
@@ -25,6 +31,8 @@ function toFormData(data: Partial<ProdukInput>, file?: File | null): FormData {
 
 export const produkService = {
   list: (search?: string) => get<Produk[]>('/produk', search ? { search } : undefined),
+  listPage: (params?: ProdukListParams): Promise<ApiDataWithMeta<Produk[], PaginationMeta>> =>
+    getWithMeta<Produk[]>('/produk', params as Record<string, unknown>),
   getById: (id: number) => get<Produk>(`/produk/${id}`),
   getByBarcode: (barcode: string) => get<Produk>(`/produk/barcode/${barcode}`),
 

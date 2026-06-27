@@ -14,7 +14,7 @@ export function StoreAvatar({ src, name, className = '' }: { src?: string | null
     <div className={`flex items-center justify-center overflow-hidden bg-white ${className}`}>
       {show ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src as string} alt={name || 'Logo'} className="h-full w-full object-contain p-1" onError={() => setBroken(true)} />
+        <img src={src as string} alt={name || 'Logo'} decoding="async" className="h-full w-full object-contain p-1" onError={() => setBroken(true)} />
       ) : (
         <span className="text-xl font-black text-primary">{initial}</span>
       )}

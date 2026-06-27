@@ -4,13 +4,15 @@ import type { SubscriptionSetting, SubscriptionPayment, Billing, SubscriptionSta
 export const subscriptionService = {
   // Setting harga global. Kredensial Midtrans billing hanya berada di ENV backend.
   getSetting: () => get<SubscriptionSetting>('/subscription/setting'),
-  updateSetting: (data: {
+  updateSetting: (data: Partial<{
     price_monthly: number;
     price_yearly: number;
     price_business_monthly: number;
     price_business_yearly: number;
     payment_ttl_hours: number;
-  }) => put<SubscriptionSetting>('/subscription/setting', data),
+    maintenance_mode: boolean;
+    maintenance_message: string;
+  }>) => put<SubscriptionSetting>('/subscription/setting', data),
 
   // Merchant
   billing: () => get<Billing>('/subscription/billing'),

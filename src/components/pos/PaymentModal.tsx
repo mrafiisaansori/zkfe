@@ -276,6 +276,8 @@ export function PaymentModal({
                 <img
                   src={qris!.IMAGE_URL as string}
                   alt="QRIS pembayaran"
+                  loading="lazy"
+                  decoding="async"
                   className="h-60 w-60 max-w-full rounded-xl border border-slate-100 object-contain"
                 />
                 <div className="flex items-center gap-2 text-center text-xs text-slate-500">
@@ -423,7 +425,7 @@ function MidtransPanel({ phase, data, msg, total, checkingStatus, onCheckStatus 
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm">
         {data?.qr_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={data.qr_url} alt="QRIS dinamis untuk pembayaran" className="h-60 w-60 max-w-full rounded-xl border border-slate-100 object-contain" />
+          <img src={data.qr_url} alt="QRIS dinamis untuk pembayaran" loading="lazy" decoding="async" className="h-60 w-60 max-w-full rounded-xl border border-slate-100 object-contain" />
         ) : (
           <div className="flex h-60 w-60 items-center justify-center rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
             QR tidak tersedia

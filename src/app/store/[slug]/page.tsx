@@ -73,7 +73,7 @@ export default function PublicCatalogPage() {
         <div className="relative overflow-hidden sm:rounded-3xl sm:shadow-premium">
           {cat.toko?.banner_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={cat.toko.banner_url} alt="Banner toko" className="h-36 w-full object-cover sm:h-48" />
+            <img src={cat.toko.banner_url} alt="Banner toko" decoding="async" className="h-36 w-full object-cover sm:h-48" />
           ) : (
             <div className="relative h-32 w-full bg-gradient-to-br from-brand-900 via-primary to-accent sm:h-44">
               <div aria-hidden className="absolute inset-0 opacity-20"
@@ -171,7 +171,13 @@ export default function PublicCatalogPage() {
         <div className="mt-2 px-4 py-8 text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 shadow-card">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/brand/zona-kasir-icon.svg" alt="Zona Kasir" className="h-6 w-6 object-contain" />
+            <img
+              src="/brand/zona-kasir-icon-128.webp"
+              alt="Zona Kasir"
+              loading="lazy"
+              decoding="async"
+              className="h-6 w-6 object-contain"
+            />
             <span className="text-sm font-bold text-primary">Zona Kasir</span>
           </div>
           <p className="mt-2 text-xs text-slate-400">Katalog ini dibuat dengan Zona Kasir &middot; POS untuk toko &amp; UMKM</p>
@@ -202,7 +208,7 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
 function ProductImg({ p }: { p: PublicProduct }) {
   return p.foto_url ? (
     // eslint-disable-next-line @next/next/no-img-element
-    <img src={p.foto_url} alt={p.nama} loading="lazy" className="h-full w-full object-cover" />
+    <img src={p.foto_url} alt={p.nama} loading="lazy" decoding="async" className="h-full w-full object-cover" />
   ) : (
     <div className="flex h-full w-full items-center justify-center bg-brand-50 text-brand-300">
       <Store className="h-8 w-8" />

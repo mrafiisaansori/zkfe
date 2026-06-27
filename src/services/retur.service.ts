@@ -1,4 +1,4 @@
-import { get, post, put, del } from './api';
+import { get, getWithMeta, post, put, del, type ApiDataWithMeta, type PaginationMeta } from './api';
 import type { ListFilter } from './pembelian.service';
 
 export interface ReturItemInput {
@@ -43,6 +43,8 @@ export interface Retur {
 
 export const returService = {
   list: (filter?: ListFilter) => get<Retur[]>('/retur', filter as Record<string, unknown>),
+  listPage: (filter?: ListFilter): Promise<ApiDataWithMeta<Retur[], PaginationMeta>> =>
+    getWithMeta<Retur[]>('/retur', filter as Record<string, unknown>),
   getById: (id: number) => get<Retur>(`/retur/${id}`),
   create: (data: ReturInput) => post<{ id: number }>('/retur', data),
   update: (id: number, data: ReturInput) => put<{ id: number }>(`/retur/${id}`, data),

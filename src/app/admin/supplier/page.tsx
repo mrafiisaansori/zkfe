@@ -4,10 +4,11 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
-  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, type Column,
+  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, Pagination, type Column,
 } from '@/components/ui';
 import { supplierService, getErrorMessage } from '@/services';
 import type { Supplier, SupplierInput } from '@/services/supplier.service';
+import type { PaginationMeta } from '@/services/api';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
 export default function SupplierPage() {
@@ -16,6 +17,8 @@ export default function SupplierPage() {
   usePageLoading(loading);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Supplier | null>(null);
   const [saving, setSaving] = useState(false);
@@ -26,10 +29,19 @@ export default function SupplierPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    try { setData((await supplierService.list({ search: search || undefined, status: status === '' ? undefined : Number(status) })) || []); }
+    try {
+      const res = await supplierService.listPage({
+        search: search || undefined,
+        status: status === '' ? undefined : Number(status),
+        page,
+        limit: 25,
+      });
+      setData(res.data || []);
+      setMeta(res.meta);
+    }
     catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
-  }, [search, status]);
+  }, [search, status, page]);
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
 
   function openCreate() {
@@ -80,16 +92,17 @@ export default function SupplierPage() {
 
       <Card className="mb-4"><CardBody>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <SearchInput className="flex-1" placeholder="Cari nama / telepon / email..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <SearchInput className="flex-1" placeholder="Cari nama / telepon / email..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           <div className="w-full sm:w-52">
-            <SelectMenu label="Status" value={status} onChange={(v) => setStatus(String(v))}
+            <SelectMenu label="Status" value={status} onChange={(v) => { setStatus(String(v)); setPage(1); }}
               options={[{ value: '', label: 'Semua' }, { value: '1', label: 'Aktif' }, { value: '0', label: 'Nonaktif' }]} />
           </div>
         </div>
       </CardBody></Card>
 
       <Card><CardBody>
-        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada supplier" showRowNumber />
+        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada supplier" showRowNumber startIndex={(page - 1) * 25} />
+        <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 
       <Modal open={formOpen} onClose={() => setFormOpen(false)} title={editing ? 'Edit Supplier' : 'Tambah Supplier'} size="md">

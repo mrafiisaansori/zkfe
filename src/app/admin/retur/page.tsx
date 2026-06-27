@@ -4,7 +4,7 @@ import { Plus, Trash2, CheckCircle2, Eye, X, FileText, Ban } from 'lucide-react'
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
-  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, type Column,
+  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, Pagination, type Column,
 } from '@/components/ui';
 import {
   returService, pembelianService, supplierService, produkService, identitasService, getErrorMessage,
@@ -13,6 +13,7 @@ import type { Retur, ReturInput } from '@/services/retur.service';
 import type { Pembelian } from '@/services/pembelian.service';
 import type { Supplier } from '@/services/supplier.service';
 import type { Produk } from '@/types';
+import type { PaginationMeta } from '@/services/api';
 import { formatDate } from '@/utils/format';
 import { cetakRetur, type MerchantHeader } from '@/utils/cetakDokumen';
 import { usePageLoading } from '@/hooks/usePageLoading';
@@ -32,9 +33,13 @@ export default function ReturPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [produk, setProduk] = useState<Produk[]>([]);
   const [pembelianList, setPembelianList] = useState<Pembelian[]>([]);
+  const [produkSearchLoading, setProdukSearchLoading] = useState(false);
+  const [pembelianSearchLoading, setPembelianSearchLoading] = useState(false);
   const [merchant, setMerchant] = useState<MerchantHeader>({});
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta | undefined>();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Retur | null>(null);
@@ -52,20 +57,67 @@ export default function ReturPage() {
   const [catatan, setCatatan] = useState('');
   const [items, setItems] = useState<ItemRow[]>([{ id_produk: '', qty: '', alasan: '', kondisi: '', harga: '' }]);
 
+  const mergeProdukOptions = useCallback((rows: Produk[]) => {
+    setProduk((prev) => {
+      const map = new Map(prev.map((p) => [p.ID, p]));
+      rows.forEach((p) => map.set(p.ID, p));
+      return Array.from(map.values()).sort((a, b) => a.NAMA.localeCompare(b.NAMA));
+    });
+  }, []);
+
+  const loadProdukOptions = useCallback(async (q = '') => {
+    setProdukSearchLoading(true);
+    try {
+      const res = await produkService.listPage({ search: q || undefined, page: 1, limit: 50 });
+      mergeProdukOptions(res.data || []);
+    } catch {
+      // Hindari toast berulang selama user mengetik di dropdown.
+    } finally {
+      setProdukSearchLoading(false);
+    }
+  }, [mergeProdukOptions]);
+
+  const mergePembelianOptions = useCallback((rows: Pembelian[]) => {
+    setPembelianList((prev) => {
+      const map = new Map(prev.map((p) => [p.ID, p]));
+      rows.forEach((p) => map.set(p.ID, p));
+      return Array.from(map.values()).sort((a, b) => b.ID - a.ID);
+    });
+  }, []);
+
+  const loadPembelianOptions = useCallback(async (q = '') => {
+    setPembelianSearchLoading(true);
+    try {
+      const res = await pembelianService.listPage({ status: 1, search: q || undefined, page: 1, limit: 50 });
+      mergePembelianOptions(res.data || []);
+    } catch {
+      // Dropdown option search tidak perlu toast berulang.
+    } finally {
+      setPembelianSearchLoading(false);
+    }
+  }, [mergePembelianOptions]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData((await returService.list({ search: search || undefined, status: status === '' ? undefined : Number(status) })) || []);
+      const res = await returService.listPage({
+        search: search || undefined,
+        status: status === '' ? undefined : Number(status),
+        page,
+        limit: 25,
+      });
+      setData(res.data || []);
+      setMeta(res.meta);
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
-  }, [search, status]);
+  }, [search, status, page]);
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
   useEffect(() => {
-    supplierService.list({ status: 1 }).then((d) => setSuppliers(d || [])).catch(() => {});
-    produkService.list().then((d) => setProduk(d || [])).catch(() => {});
-    pembelianService.list({ status: 1 }).then((d) => setPembelianList(d || [])).catch(() => {});
+    supplierService.listPage({ status: 1, limit: 100 }).then((d) => setSuppliers(d.data || [])).catch(() => {});
+    loadProdukOptions();
+    loadPembelianOptions();
     identitasService.get().then((d) => setMerchant({ nama: d?.NAMA, alamat: d?.ALAMAT, no_telp: d?.NO_TELP, logo_url: d?.LOGO_URL })).catch(() => {});
-  }, []);
+  }, [loadProdukOptions, loadPembelianOptions]);
 
   const produkOptions = useMemo(() => produk.map((p) => ({ value: p.ID, label: p.NAMA })), [produk]);
   const supplierOptions = useMemo(() => [{ value: '', label: '— Tanpa supplier —' }, ...suppliers.map((s) => ({ value: String(s.ID), label: s.NAMA }))], [suppliers]);
@@ -80,6 +132,25 @@ export default function ReturPage() {
     setSupplierId(r.ID_SUPPLIER ? String(r.ID_SUPPLIER) : ''); setPembelianId(r.ID_PEMBELIAN ? String(r.ID_PEMBELIAN) : '');
     setCatatan(r.CATATAN || '');
     setItems((r.detail || []).map((d) => ({ id_produk: d.ID_PRODUK, qty: d.QTY, alasan: d.ALASAN || '', kondisi: d.KONDISI || '', harga: d.HARGA ?? '' })));
+    mergeProdukOptions((r.detail || []).filter((d) => d.produk).map((d) => ({
+      ID: d.produk!.ID,
+      NAMA: d.produk!.NAMA,
+      ID_KATEGORI: 0,
+      STOK: d.produk!.STOK ?? 0,
+      HARGA_BELI: 0,
+      HARGA_JUAL: 0,
+      BARCODE: null,
+      FOTO: null,
+      FOTO_URL: null,
+    })));
+    if (r.pembelian) mergePembelianOptions([{
+      ID: r.pembelian.ID,
+      NO_NOTA: r.pembelian.NO_NOTA,
+      TANGGAL: r.TANGGAL,
+      STATUS: 1,
+      ID_SUPPLIER: r.ID_SUPPLIER,
+      supplier: r.supplier,
+    } as Pembelian]);
     if (!r.detail?.length) setItems([{ id_produk: '', qty: '', alasan: '', kondisi: '', harga: '' }]);
     setFormOpen(true);
   }
@@ -169,16 +240,17 @@ export default function ReturPage() {
 
       <Card className="mb-4"><CardBody>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <SearchInput className="flex-1" placeholder="Cari nomor retur..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <SearchInput className="flex-1" placeholder="Cari nomor retur..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           <div className="w-full sm:w-52">
-            <SelectMenu label="Status" value={status} onChange={(v) => setStatus(String(v))}
+            <SelectMenu label="Status" value={status} onChange={(v) => { setStatus(String(v)); setPage(1); }}
               options={[{ value: '', label: 'Semua status' }, { value: '0', label: 'Draft' }, { value: '1', label: 'Selesai' }, { value: '2', label: 'Dibatalkan' }]} />
           </div>
         </div>
       </CardBody></Card>
 
       <Card><CardBody>
-        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada retur" showRowNumber />
+        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada retur" showRowNumber startIndex={(page - 1) * 25} />
+        <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 
       <Modal open={formOpen} onClose={() => setFormOpen(false)} title={editing ? 'Edit Retur (Draft)' : 'Buat Retur'} size="xl">
@@ -187,7 +259,16 @@ export default function ReturPage() {
             <Input label="Nomor retur" value={noNota} onChange={(e) => setNoNota(e.target.value)} placeholder="mis. RTR-001" />
             <Input label="Tanggal" type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} />
             <SelectMenu label="Supplier" value={supplierId} onChange={(v) => setSupplierId(String(v))} options={supplierOptions} searchable />
-            <SelectMenu label="Pembelian asal (opsional)" value={pembelianId} onChange={(v) => setPembelianId(String(v))} options={pembelianOptions} searchable />
+            <SelectMenu
+              label="Pembelian asal (opsional)"
+              value={pembelianId}
+              onChange={(v) => setPembelianId(String(v))}
+              options={pembelianOptions}
+              searchable
+              onSearchChange={loadPembelianOptions}
+              loading={pembelianSearchLoading}
+              searchPlaceholder="Cari nomor pembelian..."
+            />
             <div className="sm:col-span-2"><Input label="Catatan (opsional)" value={catatan} onChange={(e) => setCatatan(e.target.value)} /></div>
           </div>
 
@@ -197,7 +278,17 @@ export default function ReturPage() {
               <div key={i} className="rounded-xl border border-line p-3">
                 <div className="grid grid-cols-12 items-end gap-2">
                   <div className="col-span-12 sm:col-span-6">
-                    <SelectMenu label="Produk" value={it.id_produk === '' ? '' : it.id_produk} onChange={(v) => setItem(i, { id_produk: Number(v) })} options={produkOptions} searchable placeholder="Pilih produk" />
+                    <SelectMenu
+                      label="Produk"
+                      value={it.id_produk === '' ? '' : it.id_produk}
+                      onChange={(v) => setItem(i, { id_produk: Number(v) })}
+                      options={produkOptions}
+                      searchable
+                      onSearchChange={loadProdukOptions}
+                      loading={produkSearchLoading}
+                      searchPlaceholder="Cari produk..."
+                      placeholder="Pilih produk"
+                    />
                   </div>
                   <div className="col-span-5 sm:col-span-2">
                     <Input label="Qty retur" type="number" min={0} value={it.qty} onChange={(e) => setItem(i, { qty: e.target.value === '' ? '' : Number(e.target.value) })} />

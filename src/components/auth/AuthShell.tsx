@@ -189,6 +189,8 @@ export function AuthShell({
                     <img
                       src="/images/auth-pos-illustration.svg"
                       alt="Ilustrasi aplikasi POS untuk merchant"
+                      loading="lazy"
+                      decoding="async"
                       className="aspect-square max-h-[36vh] w-full object-contain transition-transform duration-300 hover:scale-[1.02]"
                     />
                   </div>

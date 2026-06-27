@@ -8,16 +8,17 @@ export interface LoginResult {
 
 export interface RegisterInput {
   owner_name: string;
-  store_name: string;
   email: string;
   phone: string;
-  address: string;
-  city: string;
-  province: string;
-  business_category: string;
   username: string;
   password: string;
-  password_confirmation: string;
+  // Opsional — dilengkapi nanti di halaman admin via onboarding.
+  store_name?: string;
+  address?: string;
+  city?: string;
+  province?: string;
+  business_category?: string;
+  password_confirmation?: string;
 }
 
 // turnstile_token disertakan bila Turnstile aktif (production). Backend mengabaikannya bila nonaktif.

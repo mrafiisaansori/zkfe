@@ -1,13 +1,14 @@
 'use client';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Eye, ReceiptText, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardBody, Button, DataTable, FilterDate, Badge, SelectMenu, type Column } from '@/components/ui';
+import { Card, CardBody, Button, DataTable, FilterDate, Badge, SelectMenu, Pagination, type Column } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
-import { penjualanService, jenisBayarService, getErrorMessage } from '@/services';
+import { laporanService, jenisBayarService, getErrorMessage } from '@/services';
 import type { Penjualan, JenisBayar } from '@/types';
+import type { PaginationMeta } from '@/services/api';
 import { formatRupiah, formatDate, todayISO } from '@/utils/format';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
@@ -20,36 +21,27 @@ export default function RiwayatKasirPage() {
   const [awal, setAwal] = useState(todayISO());
   const [akhir, setAkhir] = useState(todayISO());
   const [metode, setMetode] = useState<number>(0); // 0 = semua metode
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta | undefined>();
+  const [rekap, setRekap] = useState({ jumlah: 0, total: 0 });
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    try { setData((await penjualanService.list({ tanggal_awal: awal, tanggal_akhir: akhir, id_user: user.id, status: 1 })) || []); }
+    try {
+      const res = await laporanService.penjualanPage(awal, akhir, user.id, 1, page, 25, metode || undefined);
+      setData(res.data?.data || []);
+      setMeta(res.meta);
+      setRekap({
+        jumlah: res.data?.jumlah_transaksi || 0,
+        total: res.data?.total_dibayar || 0,
+      });
+    }
     catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
-  }, [user, awal, akhir]);
+  }, [user, awal, akhir, metode, page]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { jenisBayarService.list().then((j) => setJenisBayar(j || [])).catch(() => {}); }, []);
-
-  // Filter metode bayar dilakukan di sisi client atas hasil list.
-  const shown = useMemo(
-    () => (metode ? data.filter((d) => d.ID_JENIS_BAYAR === metode) : data),
-    [data, metode],
-  );
-
-  // Rekap: jumlah transaksi, total penjualan, dan rincian per metode bayar.
-  const rekap = useMemo(() => {
-    const total = shown.reduce((sum, r) => sum + (Number(r.TOTAL) || 0), 0);
-    const perMetode = new Map<string, { jumlah: number; total: number }>();
-    for (const r of shown) {
-      const nama = r.jenisBayar?.NAMA ?? 'Lainnya';
-      const cur = perMetode.get(nama) ?? { jumlah: 0, total: 0 };
-      cur.jumlah += 1;
-      cur.total += Number(r.TOTAL) || 0;
-      perMetode.set(nama, cur);
-    }
-    return { jumlah: shown.length, total, perMetode: Array.from(perMetode.entries()) };
-  }, [shown]);
 
   const columns: Column<Penjualan>[] = [
     { header: 'Nota', accessor: (r) => <span className="font-mono">#{String(r.ID).padStart(6, '0')}</span> },
@@ -66,25 +58,31 @@ export default function RiwayatKasirPage() {
       <PageHeader title="Riwayat Transaksi" description="Transaksi yang Anda proses" />
       <Card className="mb-4"><CardBody>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <FilterDate awal={awal} akhir={akhir} onAwal={setAwal} onAkhir={setAkhir} />
+          <FilterDate
+            awal={awal}
+            akhir={akhir}
+            onAwal={(v) => { setAwal(v); setPage(1); }}
+            onAkhir={(v) => { setAkhir(v); setPage(1); }}
+          />
           <div className="w-full sm:w-52">
             <SelectMenu
               label="Metode bayar"
               value={metode}
-              onChange={(v) => setMetode(Number(v))}
+              onChange={(v) => { setMetode(Number(v)); setPage(1); }}
               options={[{ value: 0, label: 'Semua metode' }, ...jenisBayar.map((j) => ({ value: j.ID, label: j.NAMA }))]}
             />
           </div>
-          <Button onClick={load}>Terapkan</Button>
+          <Button onClick={() => (page === 1 ? load() : setPage(1))}>Terapkan</Button>
         </div>
       </CardBody></Card>
 
       <Card><CardBody>
-        <DataTable columns={columns} data={shown} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada transaksi" showRowNumber />
+        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada transaksi" showRowNumber startIndex={(page - 1) * 25} />
+        <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 
       {/* Rekap total untuk memudahkan kasir merekap penjualan */}
-      {!loading && shown.length > 0 && (
+      {!loading && rekap.jumlah > 0 && (
         <Card className="mt-4"><CardBody>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex items-center gap-3 rounded-xl bg-brand-50 p-4">
@@ -102,23 +100,6 @@ export default function RiwayatKasirPage() {
               </div>
             </div>
           </div>
-
-          {rekap.perMetode.length > 1 && (
-            <div className="mt-4">
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-400">Rincian per metode</p>
-              <div className="divide-y divide-slate-100 rounded-xl border border-line">
-                {rekap.perMetode.map(([nama, v]) => (
-                  <div key={nama} className="flex items-center justify-between px-4 py-2.5 text-sm">
-                    <span className="flex items-center gap-2 text-slate-600">
-                      <Badge tone="blue">{nama}</Badge>
-                      <span className="text-slate-400">{v.jumlah} transaksi</span>
-                    </span>
-                    <span className="font-semibold text-slate-800">{formatRupiah(v.total)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </CardBody></Card>
       )}
     </div>

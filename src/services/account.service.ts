@@ -15,4 +15,7 @@ export const accountService = {
     post<{ email: string }>('/account/email/verify', { otp }),
   resendEmail: () =>
     post<{ cooldown: number }>('/account/email/resend'),
+
+  // Tandai onboarding/guide selesai untuk merchant ini.
+  onboardingDone: () => post<{ message?: string }>('/account/onboarding-done'),
 };

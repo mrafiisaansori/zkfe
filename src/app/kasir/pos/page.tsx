@@ -16,6 +16,7 @@ import { formatRupiah } from '@/utils/format';
 import { printThermal } from '@/utils/printThermal';
 import type { Produk, JenisBayar, Kategori, Penjualan, CheckoutResult, Qris, TaxSetting, Identitas, ModifierGroup, ModifierOption, PlanType, MidtransQrisResult } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
+import type { PaginationMeta } from '@/services/api';
 
 export default function PosPage() {
   const user = useAuthStore((s) => s.user);
@@ -32,6 +33,9 @@ export default function PosPage() {
   const [activeKat, setActiveKat] = useState<number | 'all'>('all');
   const [loading, setLoading] = useState(true);
   usePageLoading(loading);
+  const [productPage, setProductPage] = useState(1);
+  const [productMeta, setProductMeta] = useState<PaginationMeta | undefined>();
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [payOpen, setPayOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
@@ -102,28 +106,47 @@ export default function PosPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [produk, cart.bill?.id]);
 
-  const loadProduk = useCallback(async (q?: string) => {
-    setLoading(true);
-    try { setProduk((await produkService.list(q)) || []); }
+  const loadProduk = useCallback(async (
+    q = '',
+    pageNo = 1,
+    append = false,
+    category: number | 'all' = 'all',
+  ) => {
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+    try {
+      const res = await produkService.listPage({
+        search: q || undefined,
+        category_id: category,
+        page: pageNo,
+        limit: 30,
+      });
+      setProduk((prev) => {
+        if (!append) return res.data || [];
+        const seen = new Set(prev.map((p) => p.ID));
+        return [...prev, ...(res.data || []).filter((p) => !seen.has(p.ID))];
+      });
+      setProductMeta(res.meta);
+      setProductPage(res.meta?.page ?? pageNo);
+    }
     catch (err) { toast.error(getErrorMessage(err)); }
-    finally { setLoading(false); }
+    finally { if (append) setLoadingMore(false); else setLoading(false); }
   }, []);
 
   useEffect(() => {
-    loadProduk();
     jenisBayarService.list().then((j) => setJenisBayar(j || [])).catch(() => {});
     qrisService.get().then((q) => setQris(q || null)).catch(() => {});
     kategoriService.list().then((k) => setKategori(k || [])).catch(() => {});
     taxService.get().then((tx) => setTax(tx || null)).catch(() => {});
     identitasService.get().then((it) => setIdentitas(it || null)).catch(() => {});
-  }, [loadProduk]);
+  }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => loadProduk(search), 350);
+    const t = setTimeout(() => loadProduk(search, 1, false, activeKat), 350);
     return () => clearTimeout(t);
-  }, [search, loadProduk]);
+  }, [search, activeKat, loadProduk]);
 
-  const shownProduk = activeKat === 'all' ? produk : produk.filter((p) => p.ID_KATEGORI === activeKat);
+  const shownProduk = produk;
 
   // ===== Modifier / varian saat tambah produk =====
   const [modProduk, setModProduk] = useState<Produk | null>(null);
@@ -211,7 +234,7 @@ export default function PosPage() {
       setCartOpen(false);
       if (billCtx) router.replace('/kasir/pos');
       setSuccess({ result, trx });
-      loadProduk(search);
+      loadProduk(search, 1, false, activeKat);
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setCheckingOut(false); }
   }
@@ -259,7 +282,7 @@ export default function PosPage() {
       setCartOpen(false);
       setMidtransRes(null);
       setSuccess({ result, trx });
-      loadProduk(search);
+      loadProduk(search, 1, false, activeKat);
     } catch (err) { toast.error(getErrorMessage(err)); }
   }
 
@@ -319,7 +342,7 @@ export default function PosPage() {
     return (
       <button
         key={String(id)}
-        onClick={() => setActiveKat(id)}
+        onClick={() => { setActiveKat(id); setProductPage(1); }}
         className={cn(
           'shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
           active
@@ -404,7 +427,7 @@ export default function PosPage() {
               className="flex-1 [&_input]:h-12 [&_input]:rounded-2xl [&_input]:border-brand-200 [&_input]:bg-white [&_input]:focus:border-primary [&_input]:focus:ring-accent/25"
               placeholder="Cari produk atau scan barcode..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setProductPage(1); }}
               onKeyDown={(e) => { if (e.key === 'Enter') scanBarcode((e.target as HTMLInputElement).value); }}
             />
             <Button
@@ -423,6 +446,17 @@ export default function PosPage() {
           </div>
 
           <ProductGrid produk={shownProduk} loading={loading} onAdd={addToCart} />
+          {!loading && productMeta && productPage < productMeta.total_pages && (
+            <div className="mt-5 flex justify-center">
+              <Button
+                variant="outline"
+                onClick={() => loadProduk(search, productPage + 1, true, activeKat)}
+                loading={loadingMore}
+              >
+                Muat produk lagi
+              </Button>
+            </div>
+          )}
         </section>
 
         <aside className="hidden w-[300px] shrink-0 border-l border-brand-100 bg-white p-3 xl:w-[340px] xl:p-4 2xl:w-[390px] lg:block">

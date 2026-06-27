@@ -13,6 +13,8 @@ interface Props {
   className?: string;
   searchable?: boolean;          // tampilkan kotak pencarian di dalam dropdown
   searchPlaceholder?: string;
+  onSearchChange?: (query: string) => void;
+  loading?: boolean;
 }
 
 /**
@@ -22,7 +24,7 @@ interface Props {
  */
 export function SelectMenu({
   label, value, options, placeholder = 'Pilih...', onChange, className,
-  searchable = false, searchPlaceholder = 'Cari...',
+  searchable = false, searchPlaceholder = 'Cari...', onSearchChange, loading = false,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -31,10 +33,11 @@ export function SelectMenu({
   const selected = options.find((o) => String(o.value) === String(value));
 
   const filtered = useMemo(() => {
+    if (onSearchChange) return options;
     if (!searchable || !query.trim()) return options;
     const q = query.trim().toLowerCase();
     return options.filter((o) => o.label.toLowerCase().includes(q));
-  }, [options, query, searchable]);
+  }, [options, query, searchable, onSearchChange]);
 
   useEffect(() => {
     if (!open) { setQuery(''); return; }
@@ -51,6 +54,12 @@ export function SelectMenu({
       document.removeEventListener('keydown', onKey);
     };
   }, [open, searchable]);
+
+  useEffect(() => {
+    if (!open || !searchable || !onSearchChange) return;
+    const t = setTimeout(() => onSearchChange(query), 300);
+    return () => clearTimeout(t);
+  }, [open, query, searchable, onSearchChange]);
 
   return (
     <div className={cn('w-full', className)} ref={ref}>
@@ -91,6 +100,7 @@ export function SelectMenu({
               </div>
             )}
             <div className="max-h-56 overflow-y-auto p-1.5">
+              {loading && <p className="px-3 py-2 text-sm text-slate-400">Memuat...</p>}
               {filtered.length === 0 && (
                 <p className="px-3 py-2 text-sm text-slate-400">Tidak ada hasil</p>
               )}

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Zona Kasir POS System - Admin & Kasir',
   icons: {
     icon: [
-      { url: '/brand/zona-kasir-icon.png', type: 'image/png' },
+      { url: '/brand/zona-kasir-icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/favicon.ico', sizes: 'any' },
     ],
     shortcut: '/favicon.ico',

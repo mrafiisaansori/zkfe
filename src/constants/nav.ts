@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, Tags, Boxes, Users, Receipt, BarChart3,
   Settings, ShoppingCart, History, QrCode, Store, ClipboardList,
-  TicketPercent, CreditCard, Layers, Truck, Undo2, Contact, Database, Wallet, type LucideIcon,
+  TicketPercent, CreditCard, Layers, Truck, Undo2, Contact, Database, Wallet, LifeBuoy, type LucideIcon,
 } from 'lucide-react';
 import type { Role } from '@/types';
 
@@ -61,6 +61,7 @@ export const NAV_TREE: NavNode[] = [
   },
   { label: 'Pengaturan', href: '/admin/pengaturan', icon: Settings, roles: ['admin'] },
   { label: 'Langganan', href: '/admin/langganan', icon: CreditCard, roles: ['admin'] },
+  { label: 'Panduan', href: '/admin/dashboard?guide=1', icon: LifeBuoy, roles: ['admin'] },
 
   // ===== Super Admin (kelola semua merchant) =====
   { label: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard, roles: ['superadmin'] },
@@ -74,6 +75,7 @@ export const NAV_TREE: NavNode[] = [
   { label: 'Open Bill', href: '/kasir/open-bill', icon: ClipboardList, roles: ['kasir'] },
   { label: 'Buka/Tutup Kasir', href: '/kasir/closing', icon: Wallet, roles: ['kasir'] },
   { label: 'Riwayat', href: '/kasir/riwayat', icon: History, roles: ['kasir'] },
+  { label: 'Panduan', href: '/kasir/dashboard?guide=1', icon: LifeBuoy, roles: ['kasir'] },
 ];
 
 // Susun menu untuk sebuah role: filter node + filter anak grup. Grup kosong dibuang.

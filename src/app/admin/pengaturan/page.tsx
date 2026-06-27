@@ -59,7 +59,7 @@ export default function PengaturanPage() {
                 <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-line bg-canvas">
                   {logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={logoUrl} alt="Logo" className="h-full w-full object-contain p-1" />
+                    <img src={logoUrl} alt="Logo" loading="lazy" decoding="async" className="h-full w-full object-contain p-1" />
                   ) : (
                     <span className="text-xs text-slate-400">Belum ada</span>
                   )}

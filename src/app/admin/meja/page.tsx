@@ -92,7 +92,7 @@ export default function MejaPage() {
         {qr && (
           <div className="flex flex-col items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrImg(qr.QR_TOKEN)} alt={`QR meja ${qr.NOMOR}`} className="h-60 w-60 rounded-xl border border-line" />
+            <img src={qrImg(qr.QR_TOKEN)} alt={`QR meja ${qr.NOMOR}`} loading="lazy" decoding="async" className="h-60 w-60 rounded-xl border border-line" />
             <p className="break-all text-center text-xs text-slate-500">{menuUrl(qr.QR_TOKEN)}</p>
             <div className="flex w-full gap-2">
               <Button variant="outline" className="flex-1" onClick={() => copyLink(qr.QR_TOKEN)}><Copy className="h-4 w-4" /> Salin link</Button>

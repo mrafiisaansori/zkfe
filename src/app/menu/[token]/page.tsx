@@ -72,7 +72,7 @@ export default function PublicMenuPage() {
       {/* Banner */}
       {menu.toko?.banner_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={menu.toko.banner_url} alt="Banner" className="h-40 w-full object-cover" />
+        <img src={menu.toko.banner_url} alt="Banner" decoding="async" className="h-40 w-full object-cover" />
       ) : (
         <div className="h-32 w-full bg-gradient-to-br from-ink via-primary to-accent" />
       )}
@@ -116,7 +116,7 @@ export default function PublicMenuPage() {
             <div className="mb-2 aspect-square w-full overflow-hidden rounded-2xl bg-slate-50">
               {p.foto_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={p.foto_url} alt={p.nama} className="h-full w-full object-contain p-2" />
+                <img src={p.foto_url} alt={p.nama} loading="lazy" decoding="async" className="h-full w-full object-contain p-2" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center text-slate-300"><Store className="h-8 w-8" /></div>
               )}

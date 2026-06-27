@@ -1,14 +1,24 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
 import { MobileNavbar } from './MobileNavbar';
 import { AuthGuard } from './AuthGuard';
 import { Forbidden } from './Forbidden';
+import dynamic from 'next/dynamic';
+import { MaintenancePage } from './MaintenancePage';
+
+// Lazy-load: guide tidak menambah bundle awal & hanya dimuat saat dibutuhkan.
+const OnboardingGuide = dynamic(
+  () => import('./OnboardingGuide').then((m) => m.OnboardingGuide),
+  { ssr: false },
+);
 import { NavigationLoader } from './NavigationLoader';
 import { LogoutOverlay } from './LogoutOverlay';
 import { BackgroundPattern } from '@/components/ui/BackgroundPattern';
 import { useAuthStore } from '@/stores/authStore';
+import { publicService } from '@/services';
 import type { Role } from '@/types';
 
 // Halaman /admin yang BOLEH diakses role Gudang (operasional). Selain ini → forbidden.
@@ -38,6 +48,27 @@ export function AppLayout({ role, title, children }: { role: Role | Role[]; titl
   const isKasir = roles.includes('kasir');
   const blockGudang = user?.role === 'gudang' && !isGudangAllowed(pathname);
 
+  // ===== Maintenance Mode =====
+  // Super admin selalu lolos. Role lain melihat halaman maintenance bila aktif.
+  const [maintenance, setMaintenance] = useState<{ active: boolean; message: string } | null>(null);
+  useEffect(() => {
+    if (user?.role === 'superadmin') return;
+    let alive = true;
+    publicService.maintenance()
+      .then((m) => { if (alive) setMaintenance(m); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [user?.role]);
+  const showMaintenance = user && user.role !== 'superadmin' && maintenance?.active;
+
+  if (showMaintenance) {
+    return (
+      <AuthGuard role={role}>
+        <MaintenancePage message={maintenance?.message} />
+      </AuthGuard>
+    );
+  }
+
   return (
     <AuthGuard role={role}>
       {/* Overlay loading global setiap pindah menu */}
@@ -60,6 +91,8 @@ export function AppLayout({ role, title, children }: { role: Role | Role[]; titl
         </div>
         <MobileNavbar />
       </div>
+      {/* Guide onboarding untuk Admin & Kasir */}
+      {(user?.role === 'admin' || user?.role === 'kasir') && <OnboardingGuide />}
     </AuthGuard>
   );
 }

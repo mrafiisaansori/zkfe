@@ -4,12 +4,13 @@ import { Plus, Pencil, Trash2, History, Barcode, Upload, Download, FileSpreadshe
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
-  Card, CardBody, Button, SearchInput, DataTable, Modal, ConfirmDialog, Badge, ProductImage, UpgradeModal, type Column,
+  Card, CardBody, Button, SearchInput, DataTable, Modal, ConfirmDialog, Badge, ProductImage, UpgradeModal, Pagination, type Column,
 } from '@/components/ui';
 import { ProdukForm } from '@/components/forms/ProdukForm';
 import { produkService, kategoriService, modifierService, getErrorMessage } from '@/services';
 import type { ProdukInput, ImportResult } from '@/services/produk.service';
 import type { Produk, Kategori, RekamStok, ModifierGroup } from '@/types';
+import type { PaginationMeta } from '@/services/api';
 import { formatRupiah, formatDateTime } from '@/utils/format';
 import { productImage } from '@/utils/image';
 import { printBarcodeLabel } from '@/utils/printBarcodeLabel';
@@ -21,6 +22,8 @@ export default function ProdukPage() {
   const [loading, setLoading] = useState(true);
   usePageLoading(loading);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta | undefined>();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Produk | null>(null);
   const [saving, setSaving] = useState(false);
@@ -44,6 +47,7 @@ export default function ProdukPage() {
   const [allGroups, setAllGroups] = useState<ModifierGroup[]>([]);
   const [selGroups, setSelGroups] = useState<number[]>([]);
   const [savingVarian, setSavingVarian] = useState(false);
+  const kategoriLoaded = useRef(false);
 
   async function openVarian(p: Produk) {
     setVarianFor(p); setSelGroups([]);
@@ -73,36 +77,35 @@ export default function ProdukPage() {
       const res = await produkService.import(importFile, false);
       setImportResult(res); setPreview(null);
       toast.success(`Import selesai: ${res.sukses} sukses, ${res.gagal} gagal`);
-      load(search);
+      load(search, page);
     } catch (err) { toast.error(getErrorMessage(err)); } finally { setImporting(false); }
   }
 
-  const load = useCallback(async (q?: string) => {
+  const load = useCallback(async (q = '', pageNo = 1) => {
     setLoading(true);
     try {
-      const [p, k] = await Promise.all([produkService.list(q), kategori.length ? Promise.resolve(kategori) : kategoriService.list()]);
-      setProduk(p); setKategori(k);
+      const [p, k] = await Promise.all([
+        produkService.listPage({ search: q || undefined, page: pageNo, limit: 25 }),
+        kategoriLoaded.current ? Promise.resolve(null) : kategoriService.list(),
+      ]);
+      setProduk(p.data || []);
+      setMeta(p.meta);
+      if (k) { setKategori(k); kategoriLoaded.current = true; }
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const firstSearch = useRef(true);
-  useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    // Lewati render pertama agar tidak dobel dengan initial load di atas.
-    if (firstSearch.current) { firstSearch.current = false; return; }
-    const t = setTimeout(() => load(search), 350);
+    const t = setTimeout(() => load(search, page), 350);
     return () => clearTimeout(t);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, page, load]);
 
   async function handleSubmit(data: ProdukInput, file: File | null) {
     setSaving(true);
     try {
       if (editing) { await produkService.update(editing.ID, data, file); toast.success('Produk diperbarui'); }
       else { await produkService.create(data, file); toast.success('Produk ditambahkan'); }
-      setFormOpen(false); setEditing(null); load(search);
+      setFormOpen(false); setEditing(null); load(search, page);
     } catch (err) {
       const msg = getErrorMessage(err);
       // Limit produk plan FREE tercapai -> tampilkan modal upgrade yang smooth.
@@ -119,7 +122,7 @@ export default function ProdukPage() {
   async function handleDelete() {
     if (!toDelete) return;
     setDeleting(true);
-    try { await produkService.remove(toDelete.ID); toast.success('Produk dihapus'); setToDelete(null); load(search); }
+    try { await produkService.remove(toDelete.ID); toast.success('Produk dihapus'); setToDelete(null); load(search, page); }
     catch (err) { toast.error(getErrorMessage(err)); }
     finally { setDeleting(false); }
   }
@@ -171,10 +174,17 @@ export default function ProdukPage() {
       <Card>
         <CardBody>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-sm flex-1"><SearchInput placeholder="Cari produk, barcode, kategori..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-            <Badge tone="blue">{produk.length} produk</Badge>
+            <div className="max-w-sm flex-1">
+              <SearchInput
+                placeholder="Cari produk atau barcode..."
+                value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              />
+            </div>
+            <Badge tone="blue">{meta?.total ?? produk.length} produk</Badge>
           </div>
-          <DataTable columns={columns} data={produk} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada produk" showRowNumber />
+          <DataTable columns={columns} data={produk} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada produk" showRowNumber startIndex={(page - 1) * 25} />
+          <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
         </CardBody>
       </Card>
 

@@ -87,6 +87,8 @@ export default function KatalogPage() {
               <img
                 src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=8&data=${encodeURIComponent(url)}`}
                 alt="QR Katalog"
+                loading="lazy"
+                decoding="async"
                 className="h-28 w-28 rounded-xl border border-line"
               />
               <div>
@@ -108,7 +110,7 @@ export default function KatalogPage() {
         <div className="overflow-hidden rounded-2xl border border-line">
           {identitas?.BANNER_URL ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={identitas.BANNER_URL} alt="Banner" className="h-40 w-full object-cover" />
+            <img src={identitas.BANNER_URL} alt="Banner" loading="lazy" decoding="async" className="h-40 w-full object-cover" />
           ) : <div className="flex h-40 w-full items-center justify-center bg-slate-50 text-sm text-slate-400">Belum ada banner</div>}
         </div>
         <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-brand-300 px-4 py-2 text-sm font-semibold text-primary">

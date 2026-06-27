@@ -1,4 +1,4 @@
-import { get, post, put, del } from './api';
+import { get, getWithMeta, post, put, del, type ApiDataWithMeta, type PaginationMeta } from './api';
 
 export interface Supplier {
   ID: number;
@@ -20,8 +20,10 @@ export interface SupplierInput {
 }
 
 export const supplierService = {
-  list: (params?: { search?: string; status?: number | string }) =>
+  list: (params?: { search?: string; status?: number | string; page?: number; limit?: number }) =>
     get<Supplier[]>('/supplier', params as Record<string, unknown>),
+  listPage: (params?: { search?: string; status?: number | string; page?: number; limit?: number }): Promise<ApiDataWithMeta<Supplier[], PaginationMeta>> =>
+    getWithMeta<Supplier[]>('/supplier', params as Record<string, unknown>),
   getById: (id: number) => get<Supplier>(`/supplier/${id}`),
   create: (data: SupplierInput) => post<Supplier>('/supplier', data),
   update: (id: number, data: Partial<SupplierInput>) => put<Supplier>(`/supplier/${id}`, data),

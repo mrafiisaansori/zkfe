@@ -34,7 +34,7 @@ export function BrandLoader({
         <span aria-hidden className="zk-loader-ring absolute inset-0 rounded-full" />
         <span aria-hidden className="absolute inset-[3px] rounded-full bg-white shadow-[0_1px_8px_-2px_rgba(3,4,94,0.25)]" />
         <Image
-          src="/brand/zona-kasir-icon.svg"
+          src="/brand/zona-kasir-icon-128.webp"
           alt="Zona Kasir"
           width={48}
           height={48}

@@ -28,4 +28,6 @@ export const publicService = {
   order: (token: string, payload: { customer_name?: string; note?: string; items: { id_produk: number; qty: number }[] }) =>
     post<{ no_bill: string; meja: string; total: number }>(`/public/menu/${token}/order`, payload),
   getCatalog: (slug: string) => get<PublicCatalog>(`/public/store/${slug}`),
+  // Status maintenance global (tanpa login).
+  maintenance: () => get<{ active: boolean; message: string }>('/public/maintenance'),
 };

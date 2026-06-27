@@ -1,4 +1,4 @@
-import { api, get } from './api';
+import { api, get, getWithMeta, type ApiDataWithMeta, type PaginationMeta } from './api';
 import type { LaporanPenjualan, LaporanPendapatan, Produk, Penjualan, RekapLaporan } from '@/types';
 
 export interface RekapFilter {
@@ -11,6 +11,16 @@ export interface RekapFilter {
 export const laporanService = {
   penjualan: (tanggal_awal: string, tanggal_akhir: string, id_user: string | number = 'all', status: 0 | 1 = 1) =>
     get<LaporanPenjualan>('/laporan/penjualan', { tanggal_awal, tanggal_akhir, id_user, status }),
+  penjualanPage: (
+    tanggal_awal: string,
+    tanggal_akhir: string,
+    id_user: string | number = 'all',
+    status: 0 | 1 = 1,
+    page = 1,
+    limit = 25,
+    id_jenis_bayar?: number,
+  ): Promise<ApiDataWithMeta<LaporanPenjualan, PaginationMeta>> =>
+    getWithMeta<LaporanPenjualan>('/laporan/penjualan', { tanggal_awal, tanggal_akhir, id_user, status, page, limit, id_jenis_bayar }),
   pendapatan: (tanggal_awal: string, tanggal_akhir: string, status: 0 | 1 = 1) =>
     get<LaporanPendapatan>('/laporan/pendapatan', { tanggal_awal, tanggal_akhir, status }),
   stok: () => get<{ jumlah_produk: number; nilai_stok: number; data: Produk[] }>('/laporan/stok'),

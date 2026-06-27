@@ -180,7 +180,7 @@ export default function LanggananPage() {
             {active.STATUS === 'PENDING' && active.QR_URL ? (
               <div className="space-y-3 text-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={active.QR_URL} alt="QRIS dinamis pembayaran upgrade plan" className="mx-auto h-60 w-60 rounded-2xl border object-contain" />
+                <img src={active.QR_URL} alt="QRIS dinamis pembayaran upgrade plan" loading="lazy" decoding="async" className="mx-auto h-60 w-60 rounded-2xl border object-contain" />
                 <div className="flex items-start gap-2 rounded-xl bg-brand-50 px-3 py-2 text-left text-xs leading-5 text-slate-600">
                   <ScanLine className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                   <span>Scan menggunakan aplikasi yang mendukung QRIS seperti GoPay, OVO, DANA, ShopeePay, LinkAja, atau mobile banking.</span>

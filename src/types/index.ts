@@ -9,6 +9,8 @@ export interface MerchantRef {
   invoice_prefix?: string;
   plan?: PlanType;
   pro_expires_at?: string | null;
+  onboarding_done?: boolean;
+  profile_complete?: boolean;
 }
 
 export type PlanType = 'FREE' | 'PRO' | 'BUSINESS';
@@ -94,6 +96,8 @@ export interface SubscriptionSetting {
   PRICE_BUSINESS_MONTHLY: number;
   PRICE_BUSINESS_YEARLY: number;
   PAYMENT_TTL_HOURS: number;
+  MAINTENANCE_MODE?: number;
+  MAINTENANCE_MESSAGE?: string | null;
 }
 
 export interface SubscriptionPayment {

@@ -95,7 +95,7 @@ export default function PembayaranPage() {
                 <div className="flex h-44 w-44 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-dashed border-line bg-slate-50">
                   {preview ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={preview} alt="Preview QRIS" className="h-full w-full object-contain" />
+                    <img src={preview} alt="Preview QRIS" loading="lazy" decoding="async" className="h-full w-full object-contain" />
                   ) : (
                     <div className="flex flex-col items-center gap-1 text-slate-400">
                       <QrCode className="h-10 w-10" />

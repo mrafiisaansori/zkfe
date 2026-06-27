@@ -4,7 +4,7 @@ import { Plus, Trash2, CheckCircle2, Eye, Printer, X, FileText } from 'lucide-re
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
-  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, type Column,
+  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, Pagination, type Column,
 } from '@/components/ui';
 import {
   pembelianService, supplierService, produkService, identitasService, getErrorMessage,
@@ -12,6 +12,7 @@ import {
 import type { Pembelian, PembelianInput } from '@/services/pembelian.service';
 import type { Supplier } from '@/services/supplier.service';
 import type { Produk } from '@/types';
+import type { PaginationMeta } from '@/services/api';
 import { formatRupiah, formatDate } from '@/utils/format';
 import { cetakPembelian, type MerchantHeader } from '@/utils/cetakDokumen';
 import { usePageLoading } from '@/hooks/usePageLoading';
@@ -28,9 +29,12 @@ export default function PembelianPage() {
   usePageLoading(loading);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [produk, setProduk] = useState<Produk[]>([]);
+  const [produkSearchLoading, setProdukSearchLoading] = useState(false);
   const [merchant, setMerchant] = useState<MerchantHeader>({});
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta | undefined>();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Pembelian | null>(null);
@@ -47,19 +51,46 @@ export default function PembelianPage() {
   const [catatan, setCatatan] = useState('');
   const [items, setItems] = useState<ItemRow[]>([{ id_produk: '', harga_beli: '', qty: '' }]);
 
+  const mergeProdukOptions = useCallback((rows: Produk[]) => {
+    setProduk((prev) => {
+      const map = new Map(prev.map((p) => [p.ID, p]));
+      rows.forEach((p) => map.set(p.ID, p));
+      return Array.from(map.values()).sort((a, b) => a.NAMA.localeCompare(b.NAMA));
+    });
+  }, []);
+
+  const loadProdukOptions = useCallback(async (q = '') => {
+    setProdukSearchLoading(true);
+    try {
+      const res = await produkService.listPage({ search: q || undefined, page: 1, limit: 50 });
+      mergeProdukOptions(res.data || []);
+    } catch {
+      // Dropdown option search tidak perlu toast berulang saat user mengetik.
+    } finally {
+      setProdukSearchLoading(false);
+    }
+  }, [mergeProdukOptions]);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData((await pembelianService.list({ search: search || undefined, status: status === '' ? undefined : Number(status) })) || []);
+      const res = await pembelianService.listPage({
+        search: search || undefined,
+        status: status === '' ? undefined : Number(status),
+        page,
+        limit: 25,
+      });
+      setData(res.data || []);
+      setMeta(res.meta);
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
-  }, [search, status]);
+  }, [search, status, page]);
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
   useEffect(() => {
-    supplierService.list({ status: 1 }).then((d) => setSuppliers(d || [])).catch(() => {});
-    produkService.list().then((d) => setProduk(d || [])).catch(() => {});
+    supplierService.listPage({ status: 1, limit: 100 }).then((d) => setSuppliers(d.data || [])).catch(() => {});
+    loadProdukOptions();
     identitasService.get().then((d) => setMerchant({ nama: d?.NAMA, alamat: d?.ALAMAT, no_telp: d?.NO_TELP, logo_url: d?.LOGO_URL })).catch(() => {});
-  }, []);
+  }, [loadProdukOptions]);
 
   const produkOptions = useMemo(() => produk.map((p) => ({ value: p.ID, label: p.NAMA })), [produk]);
   const supplierOptions = useMemo(() => [{ value: '', label: '— Tanpa supplier —' }, ...suppliers.map((s) => ({ value: String(s.ID), label: s.NAMA }))], [suppliers]);
@@ -72,6 +103,17 @@ export default function PembelianPage() {
     setEditing(p); setNoNota(p.NO_NOTA); setTanggal((p.TANGGAL || '').slice(0, 10));
     setSupplierId(p.ID_SUPPLIER ? String(p.ID_SUPPLIER) : ''); setCatatan(p.CATATAN || '');
     setItems((p.detail || []).map((d) => ({ id_produk: d.ID_PRODUK, harga_beli: d.HARGA_BELI, qty: d.QTY })));
+    mergeProdukOptions((p.detail || []).filter((d) => d.produk).map((d) => ({
+      ID: d.produk!.ID,
+      NAMA: d.produk!.NAMA,
+      ID_KATEGORI: 0,
+      STOK: 0,
+      HARGA_BELI: d.HARGA_BELI,
+      HARGA_JUAL: 0,
+      BARCODE: null,
+      FOTO: null,
+      FOTO_URL: null,
+    })));
     if (!p.detail?.length) setItems([{ id_produk: '', harga_beli: '', qty: '' }]);
     setFormOpen(true);
   }
@@ -158,16 +200,17 @@ export default function PembelianPage() {
 
       <Card className="mb-4"><CardBody>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <SearchInput className="flex-1" placeholder="Cari nomor nota..." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <SearchInput className="flex-1" placeholder="Cari nomor nota..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
           <div className="w-full sm:w-52">
-            <SelectMenu label="Status" value={status} onChange={(v) => setStatus(String(v))}
+            <SelectMenu label="Status" value={status} onChange={(v) => { setStatus(String(v)); setPage(1); }}
               options={[{ value: '', label: 'Semua status' }, { value: '0', label: 'Draft' }, { value: '1', label: 'Selesai' }, { value: '2', label: 'Dibatalkan' }]} />
           </div>
         </div>
       </CardBody></Card>
 
       <Card><CardBody>
-        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada pembelian" showRowNumber />
+        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada pembelian" showRowNumber startIndex={(page - 1) * 25} />
+        <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 
       {/* Form draft */}
@@ -193,7 +236,16 @@ export default function PembelianPage() {
             {items.map((it, i) => (
               <div key={i} className="grid grid-cols-12 items-center gap-2 rounded-xl border border-line p-2 sm:border-0 sm:p-0">
                 <div className="col-span-12 sm:col-span-5">
-                  <SelectMenu value={it.id_produk === '' ? '' : it.id_produk} onChange={(v) => setItem(i, { id_produk: Number(v) })} options={produkOptions} searchable placeholder="Pilih produk" />
+                  <SelectMenu
+                    value={it.id_produk === '' ? '' : it.id_produk}
+                    onChange={(v) => setItem(i, { id_produk: Number(v) })}
+                    options={produkOptions}
+                    searchable
+                    onSearchChange={loadProdukOptions}
+                    loading={produkSearchLoading}
+                    searchPlaceholder="Cari produk..."
+                    placeholder="Pilih produk"
+                  />
                 </div>
                 <div className="col-span-6 sm:col-span-2">
                   <Input type="number" min={0} placeholder="Harga" value={it.harga_beli} onChange={(e) => setItem(i, { harga_beli: e.target.value === '' ? '' : Number(e.target.value) })} />

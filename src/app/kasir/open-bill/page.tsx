@@ -4,11 +4,12 @@ import { useRouter } from 'next/navigation';
 import { Pencil, Trash2, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardBody, Button, DataTable, ConfirmDialog, Badge, SearchInput, type Column } from '@/components/ui';
+import { Card, CardBody, Button, DataTable, ConfirmDialog, Badge, SearchInput, Pagination, type Column } from '@/components/ui';
 import { Crown } from 'lucide-react';
 import { openBillService, getErrorMessage } from '@/services';
 import { formatRupiah } from '@/utils/format';
 import type { OpenBill, OpenBillStatus } from '@/types';
+import type { PaginationMeta } from '@/services/api';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/utils/cn';
@@ -40,26 +41,31 @@ export default function OpenBillPage() {
   usePageLoading(loading);
   const [status, setStatus] = useState<OpenBillStatus>('OPEN');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta | undefined>();
   const [toCancel, setToCancel] = useState<OpenBill | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const load = useCallback(async (st: OpenBillStatus, q?: string) => {
+  const load = useCallback(async (st: OpenBillStatus, q = '', pageNo = 1) => {
     setLoading(true);
-    try { setData((await openBillService.list({ status: st, search: q || undefined })) || []); }
+    try {
+      const res = await openBillService.listPage({ status: st, search: q || undefined, page: pageNo, limit: 25 });
+      setData(res.data || []);
+      setMeta(res.meta);
+    }
     catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { if (isPro) load(status); else setLoading(false); }, [status, load, isPro]);
   useEffect(() => {
-    if (!isPro) return;
-    const t = setTimeout(() => load(status, search), 350);
+    if (!isPro) { setLoading(false); return; }
+    const t = setTimeout(() => load(status, search, page), 350);
     return () => clearTimeout(t);
-  }, [search, status, load, isPro]);
+  }, [search, status, page, load, isPro]);
 
   async function handleCancel() {
     if (!toCancel) return; setBusy(true);
-    try { await openBillService.cancel(toCancel.ID); toast.success('Open bill dibatalkan'); setToCancel(null); load(status, search); }
+    try { await openBillService.cancel(toCancel.ID); toast.success('Open bill dibatalkan'); setToCancel(null); load(status, search, page); }
     catch (err) { toast.error(getErrorMessage(err)); } finally { setBusy(false); }
   }
 
@@ -113,7 +119,7 @@ export default function OpenBillPage() {
           {STATUS_TABS.map((t) => (
             <button
               key={t.value}
-              onClick={() => setStatus(t.value)}
+              onClick={() => { setStatus(t.value); setPage(1); }}
               className={cn(
                 'rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
                 status === t.value
@@ -129,7 +135,7 @@ export default function OpenBillPage() {
           className="sm:w-72"
           placeholder="Cari nama pelanggan / meja / no bill..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         />
       </div>
 
@@ -140,8 +146,10 @@ export default function OpenBillPage() {
           loading={loading}
           rowKey={(r) => r.ID}
           showRowNumber
+          startIndex={(page - 1) * 25}
           emptyTitle="Belum ada open bill"
         />
+        <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 
       <ConfirmDialog

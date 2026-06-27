@@ -4,10 +4,11 @@ import { FileDown, Search, TrendingUp, Wallet, Receipt } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/layout/StatCard';
-import { Card, CardBody, Button, FilterDate, DataTable, LoadingState, type Column } from '@/components/ui';
+import { Card, CardBody, Button, FilterDate, DataTable, LoadingState, Pagination, type Column } from '@/components/ui';
 import { laporanService, getErrorMessage } from '@/services';
 import { useAuthStore } from '@/stores/authStore';
 import type { LaporanPenjualan, LaporanPendapatan, Penjualan, RekapLaporan, PlanType } from '@/types';
+import type { PaginationMeta } from '@/services/api';
 import { formatRupiah, formatDate, todayISO } from '@/utils/format';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
@@ -22,16 +23,18 @@ export default function LaporanPage() {
   const [penjualan, setPenjualan] = useState<LaporanPenjualan | null>(null);
   const [pendapatan, setPendapatan] = useState<LaporanPendapatan | null>(null);
   const [rekap, setRekap] = useState<RekapLaporan | null>(null);
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta | undefined>();
   const [exporting, setExporting] = useState(false);
 
-  async function run() {
+  async function run(pageNo = page) {
     setLoading(true);
     try {
       const [pj, pd] = await Promise.all([
-        laporanService.penjualan(awal, akhir, 'all', 1),
+        laporanService.penjualanPage(awal, akhir, 'all', 1, pageNo, 25),
         laporanService.pendapatan(awal, akhir, 1),
       ]);
-      setPenjualan(pj); setPendapatan(pd);
+      setPenjualan(pj.data); setMeta(pj.meta); setPendapatan(pd);
       // Rekap lengkap hanya untuk PRO/BUSINESS (FREE -> backend 403, diabaikan).
       if (isPro) {
         try { setRekap(await laporanService.rekap({ tanggal_awal: awal, tanggal_akhir: akhir, status: 1 })); }
@@ -57,7 +60,7 @@ export default function LaporanPage() {
     const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
-    a.href = url; a.download = `laporan-penjualan-${awal}_${akhir}.csv`; a.click();
+    a.href = url; a.download = `laporan-penjualan-${awal}_${akhir}-halaman-${page}.csv`; a.click();
     URL.revokeObjectURL(url);
   }
 
@@ -74,8 +77,13 @@ export default function LaporanPage() {
       <PageHeader title="Laporan Penjualan" description="Rekap omzet, transaksi, dan laba per periode" />
       <Card className="mb-4"><CardBody>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <FilterDate awal={awal} akhir={akhir} onAwal={setAwal} onAkhir={setAkhir} />
-          <Button onClick={run} loading={loading}><Search className="h-4 w-4" /> Tampilkan</Button>
+          <FilterDate
+            awal={awal}
+            akhir={akhir}
+            onAwal={(v) => { setAwal(v); setPage(1); }}
+            onAkhir={(v) => { setAkhir(v); setPage(1); }}
+          />
+          <Button onClick={() => { setPage(1); run(1); }} loading={loading}><Search className="h-4 w-4" /> Tampilkan</Button>
           {penjualan && <Button variant="outline" onClick={exportCsv}><FileDown className="h-4 w-4" /> Export CSV</Button>}
           {isPro && rekap && <Button variant="outline" onClick={exportRekap} loading={exporting}><FileDown className="h-4 w-4" /> Export Rekap Lengkap</Button>}
         </div>
@@ -106,7 +114,10 @@ export default function LaporanPage() {
             </div>
             <p className="mt-2 text-xs text-slate-400">Omzet = penjualan bersih tanpa PPN &amp; service. PPN bukan pendapatan — disetor ke negara.</p>
           </CardBody></Card>
-          <Card><CardBody><DataTable columns={columns} data={penjualan.data} rowKey={(r) => r.ID} emptyTitle="Tidak ada penjualan" /></CardBody></Card>
+          <Card><CardBody>
+            <DataTable columns={columns} data={penjualan.data} rowKey={(r) => r.ID} emptyTitle="Tidak ada penjualan" showRowNumber startIndex={(page - 1) * 25} />
+            <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={(p) => { setPage(p); run(p); }} />
+          </CardBody></Card>
 
           {/* ===== Rekap lengkap (PRO/BUSINESS) ===== */}
           {isPro && rekap && (

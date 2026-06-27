@@ -1,13 +1,14 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { PackagePlus, PackageMinus } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
-  Card, CardBody, Button, SearchInput, DataTable, Modal, Input, Select, Badge, type Column,
+  Card, CardBody, Button, SearchInput, DataTable, Modal, Input, Select, Badge, Pagination, type Column,
 } from '@/components/ui';
 import { produkService, getErrorMessage } from '@/services';
 import type { Produk } from '@/types';
+import type { PaginationMeta } from '@/services/api';
 import { formatRupiah } from '@/utils/format';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
@@ -16,26 +17,28 @@ export default function StokPage() {
   const [loading, setLoading] = useState(true);
   usePageLoading(loading);
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [meta, setMeta] = useState<PaginationMeta | undefined>();
   const [target, setTarget] = useState<Produk | null>(null);
   const [jenis, setJenis] = useState<1 | 2>(1);
   const [qty, setQty] = useState<number>(0);
   const [ket, setKet] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const load = useCallback(async (q?: string) => {
+  const load = useCallback(async (q = '', pageNo = 1) => {
     setLoading(true);
-    try { setProduk((await produkService.list(q)) || []); }
+    try {
+      const res = await produkService.listPage({ search: q || undefined, page: pageNo, limit: 25 });
+      setProduk(res.data || []);
+      setMeta(res.meta);
+    }
     catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
-  const firstSearch = useRef(true);
-  useEffect(() => { load(); }, [load]);
   useEffect(() => {
-    // Lewati render pertama agar tidak dobel dengan initial load di atas.
-    if (firstSearch.current) { firstSearch.current = false; return; }
-    const t = setTimeout(() => load(search), 350);
+    const t = setTimeout(() => load(search, page), 350);
     return () => clearTimeout(t);
-  }, [search, load]);
+  }, [search, page, load]);
 
   async function submit() {
     if (!target || qty <= 0) { toast.error('Qty harus lebih dari 0'); return; }
@@ -43,7 +46,7 @@ export default function StokPage() {
     try {
       await produkService.adjustStock(target.ID, jenis, qty, ket);
       toast.success('Stok diperbarui');
-      setTarget(null); setQty(0); setKet(''); setJenis(1); load(search);
+      setTarget(null); setQty(0); setKet(''); setJenis(1); load(search, page);
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setSaving(false); }
   }
@@ -62,8 +65,18 @@ export default function StokPage() {
     <div>
       <PageHeader title="Manajemen Stok" description="Penyesuaian stok masuk/keluar untuk menjaga kesiapan kasir" />
       <Card><CardBody>
-        <div className="mb-4 max-w-sm"><SearchInput placeholder="Cari produk untuk penyesuaian stok..." value={search} onChange={(e) => setSearch(e.target.value)} /></div>
-        <DataTable columns={columns} data={produk} loading={loading} rowKey={(r) => r.ID} showRowNumber />
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="max-w-sm flex-1">
+            <SearchInput
+              placeholder="Cari produk untuk penyesuaian stok..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+          </div>
+          <Badge tone="blue">{meta?.total ?? produk.length} produk</Badge>
+        </div>
+        <DataTable columns={columns} data={produk} loading={loading} rowKey={(r) => r.ID} showRowNumber startIndex={(page - 1) * 25} />
+        <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 
       <Modal open={!!target} onClose={() => setTarget(null)} title={`Sesuaikan stok - ${target?.NAMA ?? ''}`} size="sm"

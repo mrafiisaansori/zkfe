@@ -43,9 +43,25 @@ export function getErrorMessage(err: unknown): string {
 }
 
 // Helper generik (mengembalikan field data dari response standar { success, data }).
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  total_pages: number;
+}
+
+export interface ApiDataWithMeta<T, M = PaginationMeta> {
+  data: T;
+  meta?: M;
+}
+
 export async function get<T>(url: string, params?: Record<string, unknown>): Promise<T> {
   const res = await api.get(url, { params });
   return res.data?.data as T;
+}
+export async function getWithMeta<T, M = PaginationMeta>(url: string, params?: Record<string, unknown>): Promise<ApiDataWithMeta<T, M>> {
+  const res = await api.get(url, { params });
+  return { data: res.data?.data as T, meta: res.data?.meta as M | undefined };
 }
 export async function post<T>(url: string, body?: unknown): Promise<T> {
   const res = await api.post(url, body);

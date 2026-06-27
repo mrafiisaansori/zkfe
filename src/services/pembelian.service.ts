@@ -1,4 +1,4 @@
-import { get, post, put, del } from './api';
+import { get, getWithMeta, post, put, del, type ApiDataWithMeta, type PaginationMeta } from './api';
 
 export interface PembelianItemInput {
   id_produk: number;
@@ -37,11 +37,15 @@ export interface ListFilter {
   tanggal_awal?: string;
   tanggal_akhir?: string;
   search?: string;
+  page?: number;
+  limit?: number;
 }
 
 // merchant_id & id_user TIDAK dikirim frontend — backend ambil dari token.
 export const pembelianService = {
   list: (filter?: ListFilter) => get<Pembelian[]>('/pembelian', filter as Record<string, unknown>),
+  listPage: (filter?: ListFilter): Promise<ApiDataWithMeta<Pembelian[], PaginationMeta>> =>
+    getWithMeta<Pembelian[]>('/pembelian', filter as Record<string, unknown>),
   getById: (id: number) => get<Pembelian>(`/pembelian/${id}`),
   create: (data: PembelianInput) => post<{ id: number }>('/pembelian', data),
   update: (id: number, data: PembelianInput) => put<{ id: number }>(`/pembelian/${id}`, data),

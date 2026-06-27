@@ -1,9 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Package, Receipt, ShoppingBag, TrendingUp, Star } from 'lucide-react';
-import {
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
-} from 'recharts';
+import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { UpgradeBanner } from '@/components/layout/UpgradeBanner';
 import { StatCard } from '@/components/layout/StatCard';
@@ -16,6 +14,10 @@ import { usePageLoading } from '@/hooks/usePageLoading';
 import { GudangDashboard } from './GudangDashboard';
 
 const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+const DashboardYearChart = dynamic(
+  () => import('./DashboardYearChart').then((m) => m.DashboardYearChart),
+  { ssr: false, loading: () => <Skeleton className="h-full w-full rounded-xl" /> },
+);
 
 export default function AdminDashboard() {
   // Role Gudang melihat dashboard operasional (tanpa data keuangan).
@@ -93,16 +95,7 @@ function FinanceDashboard() {
               <Badge tone="blue">Real-time</Badge>
             </div>
             <div className="h-72 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chart}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis dataKey="name" fontSize={12} />
-                  <YAxis fontSize={11} tickFormatter={(v) => `${v / 1000}k`} />
-                  <Tooltip formatter={(v: number) => formatRupiah(v)} contentStyle={{ borderRadius: 18, border: '1px solid #e2e8f0' }} />
-                  <Bar dataKey="omzet" name="Omzet" fill="#0077b6" radius={[8, 8, 0, 0]} />
-                  <Bar dataKey="laba" name="Laba" fill="#00b4d8" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <DashboardYearChart data={chart} />
             </div>
           </CardBody>
         </Card>
