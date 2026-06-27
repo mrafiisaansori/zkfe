@@ -7,10 +7,13 @@ import { homeForRole } from '@/hooks/useAuth';
 import type { Role } from '@/types';
 
 // Proteksi route berbasis role. Cek dilakukan di client setelah hydrate.
-export function AuthGuard({ role, children }: { role: Role; children: React.ReactNode }) {
+// `role` boleh satu role atau array role (mis. admin & gudang berbagi area /admin).
+// Validasi sebenarnya tetap dilakukan di backend.
+export function AuthGuard({ role, children }: { role: Role | Role[]; children: React.ReactNode }) {
   const router = useRouter();
   const { user, isAuthenticated, hasHydrated } = useAuthStore();
   const [ready, setReady] = useState(false);
+  const allowed = Array.isArray(role) ? role : [role];
 
   useEffect(() => {
     // Tunggu sampai sesi dari localStorage selesai dipulihkan, agar reload
@@ -21,7 +24,7 @@ export function AuthGuard({ role, children }: { role: Role; children: React.Reac
       router.replace('/login');
       return;
     }
-    if (user.role !== role) {
+    if (!allowed.includes(user.role)) {
       router.replace(homeForRole(user.role));
       return;
     }

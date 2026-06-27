@@ -7,7 +7,8 @@ import type { Role } from '@/types';
 
 export function homeForRole(role: Role): string {
   if (role === 'superadmin') return '/superadmin/dashboard';
-  if (role === 'admin') return '/admin/dashboard';
+  // Admin & Gudang berbagi area /admin (dashboard menyesuaikan role).
+  if (role === 'admin' || role === 'gudang') return '/admin/dashboard';
   return '/kasir/dashboard';
 }
 

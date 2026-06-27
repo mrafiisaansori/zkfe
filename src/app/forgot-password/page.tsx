@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, Lock, Mail } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
-import { Button, Turnstile, turnstileEnabled } from '@/components/ui';
+import { Button, Turnstile, isTurnstileEnabled } from '@/components/ui';
 import { authService } from '@/services';
 import { getErrorMessage } from '@/services/api';
 
@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
 
   // Step 1 - kirim email untuk minta OTP. Pesan selalu generik.
   async function requestOtp(data: EmailForm) {
-    if (turnstileEnabled && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
+    if (isTurnstileEnabled() && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
     setLoading(true);
     try {
       const res = await authService.forgotPassword(data.email, captcha);
@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
       toast.error('Konfirmasi password tidak cocok.');
       return;
     }
-    if (turnstileEnabled && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
+    if (isTurnstileEnabled() && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
     setLoading(true);
     try {
       const res = await authService.resetPassword(email, data.otp, data.new_password, captcha);

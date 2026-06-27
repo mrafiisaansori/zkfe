@@ -9,8 +9,12 @@ import { penjualanService, getErrorMessage } from '@/services';
 import type { Penjualan } from '@/types';
 import { formatRupiah, formatDate } from '@/utils/format';
 import { usePageLoading } from '@/hooks/usePageLoading';
+import { useAuthStore } from '@/stores/authStore';
+import type { PlanType } from '@/types';
 
 export default function DetailTransaksiPage() {
+  const user = useAuthStore((s) => s.user);
+  const plan = (user?.merchant?.plan as PlanType) || 'FREE';
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [trx, setTrx] = useState<Penjualan | null>(null);
@@ -81,7 +85,7 @@ export default function DetailTransaksiPage() {
         <Card><CardBody>
           <h3 className="mb-3 font-semibold text-slate-800">Preview Struk</h3>
           <div id="print-area" className="rounded-lg border border-dashed border-slate-200">
-            <Receipt ref={printRef} trx={trx} />
+            <Receipt ref={printRef} trx={trx} namaToko={user?.merchant?.nama} plan={plan} />
           </div>
         </CardBody></Card>
       </div>

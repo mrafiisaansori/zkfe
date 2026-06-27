@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2, History, Barcode, Upload, Download, FileSpreadshe
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
-  Card, CardBody, Button, SearchInput, DataTable, Modal, ConfirmDialog, Badge, ProductImage, type Column,
+  Card, CardBody, Button, SearchInput, DataTable, Modal, ConfirmDialog, Badge, ProductImage, UpgradeModal, type Column,
 } from '@/components/ui';
 import { ProdukForm } from '@/components/forms/ProdukForm';
 import { produkService, kategoriService, modifierService, getErrorMessage } from '@/services';
@@ -27,6 +27,8 @@ export default function ProdukPage() {
   const [toDelete, setToDelete] = useState<Produk | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [history, setHistory] = useState<{ produk: Produk; rows: RekamStok[] } | null>(null);
+  // Modal upgrade saat limit produk FREE (20) tercapai.
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // ===== Import massal =====
   const [importOpen, setImportOpen] = useState(false);
@@ -101,7 +103,16 @@ export default function ProdukPage() {
       if (editing) { await produkService.update(editing.ID, data, file); toast.success('Produk diperbarui'); }
       else { await produkService.create(data, file); toast.success('Produk ditambahkan'); }
       setFormOpen(false); setEditing(null); load(search);
-    } catch (err) { toast.error(getErrorMessage(err)); }
+    } catch (err) {
+      const msg = getErrorMessage(err);
+      // Limit produk plan FREE tercapai -> tampilkan modal upgrade yang smooth.
+      if (/maksimal\s*\d+\s*produk/i.test(msg) || /limit produk/i.test(msg)) {
+        setFormOpen(false);
+        setUpgradeOpen(true);
+      } else {
+        toast.error(msg);
+      }
+    }
     finally { setSaving(false); }
   }
 
@@ -173,6 +184,13 @@ export default function ProdukPage() {
 
       <ConfirmDialog open={!!toDelete} onClose={() => setToDelete(null)} onConfirm={handleDelete} loading={deleting}
         title="Hapus produk" message={`Hapus "${toDelete?.NAMA}"? Tindakan ini tidak bisa dibatalkan.`} confirmLabel="Hapus" />
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        title="Batas produk paket FREE tercapai"
+        description="Paket FREE hanya mendukung maksimal 20 produk. Upgrade ke PRO untuk menambahkan produk lebih banyak dan membuka fitur lanjutan."
+      />
 
       <Modal open={!!history} onClose={() => setHistory(null)} title={`Riwayat stok - ${history?.produk.NAMA ?? ''}`}>
         {history && (history.rows.length === 0 ? <p className="py-6 text-center text-sm text-slate-400">Belum ada riwayat</p> : (

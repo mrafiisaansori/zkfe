@@ -14,7 +14,8 @@ const menuUrl = (token: string) => (typeof window !== 'undefined' ? `${window.lo
 const qrImg = (token: string) => `https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=10&data=${encodeURIComponent(menuUrl(token))}`;
 
 export default function MejaPage() {
-  const isPro = useAuthStore((s) => s.user?.merchant?.plan) === 'PRO';
+  const planVal = useAuthStore((s) => s.user?.merchant?.plan);
+  const isPro = planVal === 'PRO' || planVal === 'BUSINESS'; // BUSINESS = superset PRO
   const [data, setData] = useState<Meja[]>([]);
   const [loading, setLoading] = useState(true);
   usePageLoading(loading);

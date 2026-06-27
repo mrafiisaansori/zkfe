@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { ArrowRight, Eye, EyeOff, Lock, ShieldCheck, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
-import { Button, Turnstile, turnstileEnabled, type TurnstileHandle } from '@/components/ui';
+import { Button, Turnstile, isTurnstileEnabled, type TurnstileHandle } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 
 interface FormData { username: string; password: string; }
@@ -23,7 +23,7 @@ export default function BeAdminLoginPage() {
 
   async function onSubmit(data: FormData) {
     if (loading) return;
-    if (turnstileEnabled && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
+    if (isTurnstileEnabled() && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
     setLoading(true);
     const res = await login(data.username, data.password, captcha, 'superadmin');
     if (!res.ok) {

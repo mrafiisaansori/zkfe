@@ -1,11 +1,14 @@
 import { get, post, put, del } from './api';
 import type { Pengguna } from '@/types';
 
+// Level user yang dapat dibuat admin merchant: 2 = Kasir, 3 = Gudang.
+export type ManageableLevel = 2 | 3;
+
 export interface PenggunaInput {
   nama: string;
   username: string;
   password?: string;
-  level: 1 | 2;
+  level: ManageableLevel;
   telp?: string;
 }
 

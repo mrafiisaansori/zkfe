@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Menu, X, LogOut, Loader2 } from 'lucide-react';
-import { navForRole, isNavItemActive } from '@/constants/nav';
+import { navForRole, flatNavForRole, isHrefActive, isGroup, type NavLeaf } from '@/constants/nav';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { useAuth } from '@/hooks/useAuth';
@@ -42,8 +42,40 @@ export function MobileMenu() {
   }, [open]);
 
   if (!user) return null;
-  const items = navForRole(user.role);
+  const nodes = navForRole(user.role);
+  const leaves = flatNavForRole(user.role);
   const isKasir = user.role === 'kasir';
+
+  const renderLeaf = (item: NavLeaf, nested = false) => {
+    const active = isHrefActive(pathname, item.href, leaves);
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={() => { if (!active) setNavLoading(true); setOpen(false); }}
+        className={cn(
+          'group relative flex items-center gap-3 rounded-2xl py-2.5 text-sm font-medium transition-all duration-200',
+          nested ? 'px-2.5' : 'px-3',
+          active
+            ? 'bg-gradient-to-r from-white/20 to-white/5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]'
+            : 'text-white/70 hover:bg-white/[0.08] hover:text-white',
+        )}
+      >
+        {active && <span className="absolute left-0 top-1/2 h-6 w-1.5 -translate-y-1/2 rounded-r-full bg-accent shadow-[0_0_12px_rgba(0,180,216,0.7)]" />}
+        <span
+          className={cn(
+            'flex items-center justify-center rounded-xl transition-colors',
+            nested ? 'h-8 w-8' : 'h-9 w-9',
+            active ? 'bg-accent text-white shadow-[0_6px_16px_-6px_rgba(0,180,216,0.9)]' : 'bg-white/[0.06] text-white/70 group-hover:text-accent',
+          )}
+        >
+          <Icon className={cn(nested ? 'h-4 w-4' : 'h-[18px] w-[18px]')} />
+        </span>
+        {item.label}
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -82,33 +114,21 @@ export function MobileMenu() {
 
             <nav className="relative flex-1 space-y-1.5 overflow-y-auto px-3 py-4">
               <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/40">Menu</p>
-              {items.map((item) => {
-                const active = isNavItemActive(pathname, item.href, items);
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => { if (!active) setNavLoading(true); setOpen(false); }}
-                    className={cn(
-                      'group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                      active
-                        ? 'bg-gradient-to-r from-white/20 to-white/5 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]'
-                        : 'text-white/70 hover:bg-white/[0.08] hover:text-white',
-                    )}
-                  >
-                    {active && <span className="absolute left-0 top-1/2 h-6 w-1.5 -translate-y-1/2 rounded-r-full bg-accent shadow-[0_0_12px_rgba(0,180,216,0.7)]" />}
-                    <span
-                      className={cn(
-                        'flex h-9 w-9 items-center justify-center rounded-xl transition-colors',
-                        active ? 'bg-accent text-white shadow-[0_6px_16px_-6px_rgba(0,180,216,0.9)]' : 'bg-white/[0.06] text-white/70 group-hover:text-accent',
-                      )}
-                    >
-                      <Icon className="h-[18px] w-[18px]" />
-                    </span>
-                    {item.label}
-                  </Link>
-                );
+              {nodes.map((node) => {
+                if (isGroup(node)) {
+                  const GroupIcon = node.icon;
+                  return (
+                    <div key={node.label} className="pt-1">
+                      <div className="flex items-center gap-2 px-3 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+                        <GroupIcon className="h-3.5 w-3.5" /> {node.label}
+                      </div>
+                      <div className="space-y-1 border-l border-white/10 pl-3">
+                        {node.children.map((c) => renderLeaf(c, true))}
+                      </div>
+                    </div>
+                  );
+                }
+                return renderLeaf(node);
               })}
             </nav>
 

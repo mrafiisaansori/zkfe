@@ -2,8 +2,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-import { navForRole, isNavItemActive } from '@/constants/nav';
+import { PanelLeftClose, PanelLeftOpen, ChevronDown } from 'lucide-react';
+import { navForRole, flatNavForRole, isHrefActive, isGroupActive, isGroup, type NavGroup, type NavLeaf } from '@/constants/nav';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { cn } from '@/utils/cn';
@@ -15,7 +15,73 @@ export function Sidebar() {
   const setNavLoading = useUIStore((s) => s.setNavLoading);
   const [menuOpen, setMenuOpen] = useState(true);
   if (!user) return null;
-  const items = navForRole(user.role);
+  const nodes = navForRole(user.role);
+  const leaves = flatNavForRole(user.role);
+
+  function LeafLink({ item, nested = false }: { item: NavLeaf; nested?: boolean }) {
+    const active = isHrefActive(pathname, item.href, leaves);
+    const Icon = item.icon;
+    return (
+      <Link
+        href={item.href}
+        onClick={() => { if (!active) setNavLoading(true); }}
+        className={cn(
+          'group relative flex items-center gap-3 rounded-2xl py-3 text-sm font-semibold transition-all duration-150',
+          menuOpen ? (nested ? 'px-2.5' : 'px-3.5') : 'justify-center px-0',
+          active
+            ? 'bg-white/[0.18] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]'
+            : 'text-white/70 hover:bg-white/[0.08] hover:text-white',
+        )}
+      >
+        <span className={cn(
+          'flex shrink-0 items-center justify-center rounded-2xl transition-colors',
+          nested && menuOpen ? 'h-8 w-8' : 'h-10 w-10',
+          active ? 'bg-accent text-white' : 'bg-white/[0.08] text-white/75 group-hover:text-white',
+        )}>
+          <Icon className={cn(nested && menuOpen ? 'h-4 w-4' : 'h-5 w-5')} />
+        </span>
+        {menuOpen && item.label}
+      </Link>
+    );
+  }
+
+  function GroupBlock({ group }: { group: NavGroup }) {
+    const groupActive = isGroupActive(pathname, group, leaves);
+    const [open, setOpen] = useState(groupActive);
+    const Icon = group.icon;
+
+    // Mode menu disembunyikan (icon-only): tampilkan anak sebagai ikon datar.
+    if (!menuOpen) {
+      return <>{group.children.map((c) => <LeafLink key={c.href} item={c} />)}</>;
+    }
+
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className={cn(
+            'flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-sm font-semibold transition-all duration-150',
+            groupActive ? 'text-white' : 'text-white/70 hover:bg-white/[0.08] hover:text-white',
+          )}
+        >
+          <span className={cn(
+            'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors',
+            groupActive ? 'bg-accent text-white' : 'bg-white/[0.08] text-white/75',
+          )}>
+            <Icon className="h-5 w-5" />
+          </span>
+          <span className="flex-1 text-left">{group.label}</span>
+          <ChevronDown className={cn('h-4 w-4 shrink-0 transition-transform', open && 'rotate-180')} />
+        </button>
+        {open && (
+          <div className="mt-1 space-y-1 border-l border-white/10 pl-3">
+            {group.children.map((c) => <LeafLink key={c.href} item={c} nested />)}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <aside className={cn(
@@ -41,32 +107,11 @@ export function Sidebar() {
 
       <nav className="flex-1 space-y-2 overflow-y-auto px-3 py-3">
         <p className={cn('px-3 pb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/50', !menuOpen && 'sr-only')}>Menu</p>
-        {items.map((item) => {
-          const active = isNavItemActive(pathname, item.href, items);
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => { if (!active) setNavLoading(true); }}
-              className={cn(
-                'group relative flex items-center gap-3 rounded-2xl py-3 text-sm font-semibold transition-all duration-150',
-                menuOpen ? 'px-3.5' : 'justify-center px-0',
-                active
-                  ? 'bg-white/[0.18] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]'
-                  : 'text-white/70 hover:bg-white/[0.08] hover:text-white',
-              )}
-            >
-              <span className={cn(
-                'flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl transition-colors',
-                active ? 'bg-accent text-white' : 'bg-white/[0.08] text-white/75 group-hover:text-white',
-              )}>
-                <Icon className="h-5 w-5" />
-              </span>
-              {menuOpen && item.label}
-            </Link>
-          );
-        })}
+        {nodes.map((node) => (
+          isGroup(node)
+            ? <GroupBlock key={node.label} group={node} />
+            : <LeafLink key={node.href} item={node} />
+        ))}
       </nav>
 
       <div className="p-3">

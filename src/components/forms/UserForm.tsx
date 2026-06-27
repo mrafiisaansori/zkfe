@@ -9,7 +9,7 @@ interface Props { initial?: Pengguna | null; loading?: boolean; onSubmit: (data:
 export function UserForm({ initial, loading, onSubmit, onCancel }: Props) {
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<PenggunaInput>({
     defaultValues: initial
-      ? { nama: initial.NAMA, username: initial.USERNAME, level: initial.LEVEL as 1 | 2, telp: initial.TELP ?? '' }
+      ? { nama: initial.NAMA, username: initial.USERNAME, level: (initial.LEVEL === 3 ? 3 : 2), telp: initial.TELP ?? '' }
       : { level: 2 },
   });
   const level = watch('level');
@@ -24,9 +24,14 @@ export function UserForm({ initial, loading, onSubmit, onCancel }: Props) {
       <SelectMenu
         label="Role"
         value={level ?? 2}
-        onChange={(v) => setValue('level', Number(v) as 1 | 2, { shouldValidate: true })}
-        options={[{ value: 1, label: 'Admin' }, { value: 2, label: 'Kasir' }]}
+        onChange={(v) => setValue('level', Number(v) as 2 | 3, { shouldValidate: true })}
+        options={[{ value: 2, label: 'Kasir' }, { value: 3, label: 'Gudang' }]}
       />
+      <p className="-mt-1 text-xs text-slate-400">
+        {level === 3
+          ? 'Gudang: akses Master Data, Stok, Pembelian, Retur, dan Transaksi (tanpa laporan keuangan).'
+          : 'Kasir: akses POS, Open Bill, dan Riwayat transaksi.'}
+      </p>
       <Input label="No. Telp (opsional)" {...register('telp')} />
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>Batal</Button>

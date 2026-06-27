@@ -1,15 +1,17 @@
 // ===== Tipe data mengikuti skema backend (tabel m_* & t_*) =====
 
-export type Role = 'superadmin' | 'admin' | 'kasir';
+export type Role = 'superadmin' | 'admin' | 'kasir' | 'gudang';
 
 export interface MerchantRef {
   id: number;
   nama: string;
   status?: string;
   invoice_prefix?: string;
-  plan?: 'FREE' | 'PRO';
+  plan?: PlanType;
   pro_expires_at?: string | null;
 }
+
+export type PlanType = 'FREE' | 'PRO' | 'BUSINESS';
 
 export interface User {
   id: number;
@@ -34,9 +36,34 @@ export interface Merchant {
   INVOICE_PREFIX: string | null;
   SLUG?: string | null;
   STATUS: string; // active | suspended | pending
-  PLAN?: 'FREE' | 'PRO';
+  PLAN?: PlanType;
   PRO_EXPIRES_AT?: string | null;
   CREATED_AT?: string;
+}
+
+// ===== Payment gateway (Midtrans QRIS dinamis) - khusus BUSINESS =====
+export type PaymentStatus = 'UNPAID' | 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' | 'FAILED';
+
+export interface MidtransQrisResult {
+  transaction_id: number;
+  no_nota: string;
+  order_id: string;
+  provider: string;
+  payment_status: PaymentStatus;
+  gross_amount: number;
+  qr_string: string | null;
+  qr_url: string | null;
+  expiry_time: string | null;
+}
+
+export interface PaymentStatusResult {
+  transaction_id: number;
+  order_id: string | null;
+  provider: string | null;
+  payment_status: PaymentStatus;
+  status_bayar: string;
+  paid_at: string | null;
+  total: number;
 }
 
 export interface TaxSetting {
@@ -58,37 +85,45 @@ export interface Voucher {
   IS_ACTIVE: boolean;
 }
 
-export type SubscriptionStatus = 'PENDING' | 'WAITING_VERIFICATION' | 'VERIFIED' | 'REJECTED' | 'EXPIRED';
+export type SubscriptionStatus = PaymentStatus | 'WAITING_VERIFICATION' | 'VERIFIED' | 'REJECTED';
 
 export interface SubscriptionSetting {
   ID?: number;
-  QRIS_IMAGE?: string | null;
-  QRIS_IMAGE_URL?: string | null;
-  QRIS_LABEL?: string | null;
   PRICE_MONTHLY: number;
   PRICE_YEARLY: number;
+  PRICE_BUSINESS_MONTHLY: number;
+  PRICE_BUSINESS_YEARLY: number;
   PAYMENT_TTL_HOURS: number;
 }
 
 export interface SubscriptionPayment {
   ID: number;
   PAKET: 'BULANAN' | 'TAHUNAN';
+  TARGET_PLAN: PlanType;
+  DURATION_MONTHS: number;
   HARGA: number;
   KODE_UNIK: number;
   TOTAL_BAYAR: number;
   BUKTI?: string | null;
   BUKTI_URL?: string | null;
   STATUS: SubscriptionStatus;
+  PROVIDER?: string | null;
+  GATEWAY_MERCHANT_ID?: string | null;
+  MIDTRANS_ORDER_ID?: string | null;
+  MIDTRANS_TRANSACTION_ID?: string | null;
+  QR_STRING?: string | null;
+  QR_URL?: string | null;
   REJECT_REASON?: string | null;
   EXPIRES_AT?: string | null;
   PAID_AT?: string | null;
+  ACTIVATED_AT?: string | null;
   CREATED_AT?: string;
   merchant?: { ID: number; NAMA: string; EMAIL?: string; PLAN?: string; PRO_EXPIRES_AT?: string | null };
   pemohon?: { ID: number; NAMA: string };
 }
 
 export interface Billing {
-  plan: 'FREE' | 'PRO';
+  plan: PlanType;
   pro_expires_at: string | null;
   status_toko: string | null;
   payments: SubscriptionPayment[];
@@ -150,6 +185,99 @@ export interface Supplier {
 export interface JenisBayar {
   ID: number;
   NAMA: string;
+}
+
+// ===== Closing Kasir / Sesi Kas (Shift) =====
+export interface KasMutasi {
+  ID: number;
+  ID_SHIFT: number;
+  TIPE: 'IN' | 'OUT';
+  NOMINAL: number;
+  KETERANGAN: string | null;
+  CREATED_AT: string | null;
+}
+
+export interface KasShiftDetail {
+  ID: number;
+  ID_SHIFT: number;
+  ID_JENIS_BAYAR: number | null;
+  NAMA_JENIS: string | null;
+  IS_CASH: number;
+  EXPECTED: number;
+  ACTUAL: number;
+  SELISIH: number;
+}
+
+// Rincian expected per metode bayar (hasil hitungan backend).
+export interface ShiftMethodExpected {
+  id_jenis_bayar: number;
+  nama: string;
+  is_cash: boolean;
+  expected: number;
+}
+
+// Hasil perhitungan expected (real-time saat OPEN, atau preview sebelum tutup).
+export interface ShiftPreview {
+  modal_awal: number;
+  methods: ShiftMethodExpected[];
+  cash_sales: number;
+  non_cash_sales: number;
+  total_sales: number;
+  mutasi_in: number;
+  mutasi_out: number;
+  expected_cash: number;
+  jumlah_transaksi: number;
+}
+
+export interface KasShift {
+  ID: number;
+  ID_USER: number | null;
+  STATION: string | null;
+  MODAL_AWAL: number;
+  BUKA_AT: string | null;
+  TUTUP_AT: string | null;
+  EXPECTED_CASH: number;
+  ACTUAL_CASH: number;
+  SELISIH_CASH: number;
+  STATUS: number; // 1=OPEN, 0=CLOSED
+  CATATAN_BUKA: string | null;
+  CATATAN_TUTUP: string | null;
+  kasir?: { ID: number; NAMA: string } | null;
+  detail?: KasShiftDetail[];
+  mutasi?: KasMutasi[];
+  preview?: ShiftPreview; // ada bila shift masih OPEN
+}
+
+export interface ShiftClosePreview extends ShiftPreview {
+  shift: KasShift;
+}
+
+export interface DailyReportRow {
+  id_shift: number;
+  kasir: string | null;
+  station: string | null;
+  buka_at: string | null;
+  tutup_at: string | null;
+  status: 'OPEN' | 'CLOSED';
+  modal_awal: number;
+  cash_sales: number;
+  non_cash_sales: number;
+  total_sales: number;
+  expected_cash: number;
+  actual_cash: number | null;
+  selisih_cash: number | null;
+}
+
+export interface DailyReport {
+  tanggal: string;
+  jumlah_shift: number;
+  shift: DailyReportRow[];
+  ringkasan: {
+    total_cash_sales: number;
+    total_non_cash_sales: number;
+    total_omzet: number;
+    total_selisih_cash: number;
+  };
 }
 
 export interface Pengguna {
@@ -253,6 +381,29 @@ export interface CheckoutResult {
   kembalian: number | null;
 }
 
+// ===== Rekap laporan lengkap (PRO/BUSINESS) =====
+export interface RekapLaporan {
+  filter: { tanggal_awal: string; tanggal_akhir: string; status: number; stok_threshold: number };
+  ringkasan: {
+    omzet_bersih: number;
+    penerimaan_bruto: number;
+    total_transaksi: number;
+    total_modal: number;
+    laba_kotor: number;
+    ppn: number;
+    service_charge: number;
+    diskon: number;
+    voucher: number;
+    diskon_voucher_total: number;
+  };
+  per_metode_bayar: { metode: string; jumlah_transaksi: number; total: number }[];
+  per_kasir: { id_user: number | null; kasir: string; jumlah_transaksi: number; total: number }[];
+  produk_terlaris: { id_produk: number; nama: string; qty: number; omzet: number }[];
+  produk_stok_menipis: { id: number; nama: string; stok: number; harga_jual: number }[];
+  harian: { tanggal: string; jumlah_transaksi: number; total: number }[];
+  bulanan: { bulan: string; jumlah_transaksi: number; total: number }[];
+}
+
 export interface DashboardSummary {
   tanggal: string;
   transaksi_hari_ini: number;
@@ -268,6 +419,20 @@ export interface DashboardSummary {
   stok_menipis: { ID: number; NAMA: string; STOK: number }[];
   produk_terlaris?: { id_produk: number; nama: string; qty: number; omzet: number }[];
   transaksi_terbaru?: { ID: number; TANGGAL: string; JAM: string; TOTAL: string; kasir?: { ID: number; NAMA: string } }[];
+}
+
+// Dashboard operasional Gudang (tanpa data keuangan).
+export interface GudangDashboard {
+  tanggal: string;
+  total_produk: number;
+  stok_menipis_count: number;
+  produk_habis_count: number;
+  stok_menipis: { ID: number; NAMA: string; STOK: number }[];
+  produk_habis: { ID: number; NAMA: string; STOK: number }[];
+  riwayat_stok: { ID: number; JENIS: number; QTY: number; TANGGAL: string; KETERANGAN: string; produk?: { ID: number; NAMA: string } }[];
+  pembelian_terbaru: { ID: number; NO_NOTA: string; TANGGAL: string; STATUS: number; supplier?: { ID: number; NAMA: string } }[];
+  retur_terbaru: { ID: number; NO_NOTA: string; TANGGAL: string; STATUS: number; supplier?: { ID: number; NAMA: string } }[];
+  transaksi_terbaru: { ID: number; TANGGAL: string; JAM: string; kasir?: { ID: number; NAMA: string } }[];
 }
 
 export interface LaporanPenjualan {

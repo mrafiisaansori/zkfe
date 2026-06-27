@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form';
 import { ArrowLeft, ArrowRight, Building2, Check, MapPin, ShieldCheck, Store, UserRound, type LucideIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
-import { Button, Input, PasswordInput, SelectMenu, Turnstile, turnstileEnabled, type TurnstileHandle } from '@/components/ui';
+import { Button, Input, PasswordInput, SelectMenu, Turnstile, isTurnstileEnabled, type TurnstileHandle } from '@/components/ui';
 import { cn } from '@/utils/cn';
 import { authService, getErrorMessage, wilayahService } from '@/services';
 import type { Kota, Provinsi } from '@/types';
@@ -184,7 +184,7 @@ export default function RegisterPage() {
     if (!kotaId) { toast.error('Pilih kota/kabupaten'); return; }
     if (!kategori) { toast.error('Pilih kategori usaha'); return; }
     if (data.password !== data.password_confirmation) { toast.error('Konfirmasi password tidak cocok'); return; }
-    if (turnstileEnabled && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
+    if (isTurnstileEnabled() && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
 
     const province = provinsiList.find((p) => p.ID === provId)?.NAMA || '';
     const city = kotaList.find((k) => k.ID === kotaId)?.NAMA || '';

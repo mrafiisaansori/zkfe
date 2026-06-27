@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { ArrowRight, MailCheck, RotateCcw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
-import { Button, Input, Turnstile, turnstileEnabled, type TurnstileHandle } from '@/components/ui';
+import { Button, Input, Turnstile, isTurnstileEnabled, type TurnstileHandle } from '@/components/ui';
 import { authService, getErrorMessage } from '@/services';
 
 function VerifyOtpInner() {
@@ -31,7 +31,7 @@ function VerifyOtpInner() {
     e.preventDefault();
     if (!/^\d{6}$/.test(otp)) { toast.error('Masukkan 6 digit OTP'); return; }
     if (loading) return; // cegah double submit
-    if (turnstileEnabled && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
+    if (isTurnstileEnabled() && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
     setLoading(true);
     try {
       const res = await authService.verifyOtp(email, otp, captcha);

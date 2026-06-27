@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { ArrowRight, Eye, EyeOff, Lock, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
-import { Button, Turnstile, turnstileEnabled, type TurnstileHandle } from '@/components/ui';
+import { Button, Turnstile, isTurnstileEnabled, type TurnstileHandle } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
 
 interface FormData { username: string; password: string; }
@@ -20,7 +20,7 @@ export default function LoginPage() {
 
   async function onSubmit(data: FormData) {
     if (loading) return; // cegah double submit
-    if (turnstileEnabled && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
+    if (isTurnstileEnabled() && !captcha) { toast.error('Selesaikan verifikasi keamanan dulu'); return; }
     setLoading(true);
     const res = await login(data.username, data.password, captcha, 'merchant');
     if (!res.ok) {

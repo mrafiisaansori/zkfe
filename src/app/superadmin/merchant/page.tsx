@@ -56,12 +56,13 @@ export default function SuperadminMerchantPage() {
     { header: 'Daftar', accessor: (r) => (r.CREATED_AT ? formatDate(r.CREATED_AT) : '-') },
     { header: 'Status', accessor: (r) => <Badge tone={statusTone(r.STATUS)}>{statusLabel(r.STATUS)}</Badge> },
     { header: 'Plan', accessor: (r) => {
-      const pro = (r as Merchant & { PLAN?: string }).PLAN === 'PRO';
+      const planVal = (r as Merchant & { PLAN?: string }).PLAN || 'FREE';
+      const paid = planVal === 'PRO' || planVal === 'BUSINESS';
       const exp = (r as Merchant & { PRO_EXPIRES_AT?: string }).PRO_EXPIRES_AT;
       return (
         <div>
-          <Badge tone={pro ? 'green' : 'slate'}>{pro ? 'PRO' : 'FREE'}</Badge>
-          {pro && exp && <p className="mt-0.5 text-[11px] text-slate-400">s/d {formatDate(exp)}</p>}
+          <Badge tone={planVal === 'BUSINESS' ? 'blue' : paid ? 'green' : 'slate'}>{planVal}</Badge>
+          {paid && exp && <p className="mt-0.5 text-[11px] text-slate-400">s/d {formatDate(exp)}</p>}
         </div>
       );
     } },
@@ -124,16 +125,17 @@ function toDateInput(v?: string | null) {
 }
 
 function PlanModal({ merchant, onClose, onSaved }: { merchant: Merchant | null; onClose: () => void; onSaved: () => void }) {
-  const [plan, setPlan] = useState<'FREE' | 'PRO'>('FREE');
+  const [plan, setPlan] = useState<'FREE' | 'PRO' | 'BUSINESS'>('FREE');
   const [starts, setStarts] = useState('');
   const [expires, setExpires] = useState('');
   const [note, setNote] = useState('');
   const [saving, setSaving] = useState(false);
+  const isPaid = plan === 'PRO' || plan === 'BUSINESS';
 
   useEffect(() => {
     if (!merchant) return;
     const m = merchant as Merchant & { PLAN?: string; PRO_STARTS_AT?: string; PRO_EXPIRES_AT?: string };
-    setPlan(m.PLAN === 'PRO' ? 'PRO' : 'FREE');
+    setPlan(m.PLAN === 'PRO' || m.PLAN === 'BUSINESS' ? m.PLAN : 'FREE');
     setStarts(toDateInput(m.PRO_STARTS_AT) || toDateInput(new Date().toISOString()));
     setExpires(toDateInput(m.PRO_EXPIRES_AT));
     setNote('');
@@ -141,13 +143,13 @@ function PlanModal({ merchant, onClose, onSaved }: { merchant: Merchant | null; 
 
   async function save() {
     if (!merchant) return;
-    if (plan === 'PRO' && !expires) { toast.error('Isi tanggal expired PRO'); return; }
+    if (isPaid && !expires) { toast.error(`Isi tanggal expired ${plan}`); return; }
     setSaving(true);
     try {
       await merchantService.setPlan(merchant.ID, {
         plan,
-        pro_starts_at: plan === 'PRO' ? (starts || null) : null,
-        pro_expires_at: plan === 'PRO' ? (expires || null) : null,
+        pro_starts_at: isPaid ? (starts || null) : null,
+        pro_expires_at: isPaid ? (expires || null) : null,
         note: note || undefined,
       });
       toast.success(`Plan "${merchant.NAMA}" → ${plan}`);
@@ -162,20 +164,26 @@ function PlanModal({ merchant, onClose, onSaved }: { merchant: Merchant | null; 
         <SelectMenu
           label="Plan"
           value={plan}
-          onChange={(v) => setPlan(v as 'FREE' | 'PRO')}
-          options={[{ value: 'FREE', label: 'FREE' }, { value: 'PRO', label: 'PRO' }]}
+          onChange={(v) => setPlan(v as 'FREE' | 'PRO' | 'BUSINESS')}
+          options={[
+            { value: 'FREE', label: 'FREE' },
+            { value: 'PRO', label: 'PRO' },
+            { value: 'BUSINESS', label: 'BUSINESS (custom + payment gateway)' },
+          ]}
         />
-        {plan === 'PRO' && (
+        {isPaid && (
           <div className="grid grid-cols-2 gap-3">
-            <Input label="Mulai PRO" type="date" value={starts} onChange={(e) => setStarts(e.target.value)} />
-            <Input label="Expired PRO" type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
+            <Input label={`Mulai ${plan}`} type="date" value={starts} onChange={(e) => setStarts(e.target.value)} />
+            <Input label={`Expired ${plan}`} type="date" value={expires} onChange={(e) => setExpires(e.target.value)} />
           </div>
         )}
         <Input label="Catatan (alasan)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="mis. aktivasi manual / promo" />
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
-          {plan === 'PRO'
-            ? 'Fitur PRO langsung aktif sampai tanggal expired. Perubahan dicatat di riwayat.'
-            : 'Memilih FREE akan menonaktifkan PRO; fitur kembali mengikuti aturan FREE.'}
+          {plan === 'BUSINESS'
+            ? 'BUSINESS = semua fitur PRO + payment gateway QRIS dinamis Midtrans. Aktif sampai tanggal expired.'
+            : plan === 'PRO'
+              ? 'Fitur PRO langsung aktif sampai tanggal expired. Perubahan dicatat di riwayat.'
+              : 'Memilih FREE akan menonaktifkan plan berbayar; fitur kembali mengikuti aturan FREE.'}
         </p>
         <div className="flex justify-end gap-2">
           <Button variant="outline" onClick={onClose} disabled={saving}>Batal</Button>

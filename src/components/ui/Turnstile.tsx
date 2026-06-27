@@ -14,7 +14,11 @@ function isLocalHost() {
     || h.endsWith('.local') || h.endsWith('.localhost');
 }
 
-export const turnstileEnabled = !!SITE_KEY && !isLocalHost();
+// Dipanggil saat event submit (client-only). Jangan gunakan hasil pengecekan
+// hostname untuk conditional render karena HTML server dan client akan berbeda.
+export function isTurnstileEnabled() {
+  return !!SITE_KEY && !isLocalHost();
+}
 
 declare global {
   interface Window { turnstile?: { render: (el: HTMLElement, opts: Record<string, unknown>) => string; remove: (id: string) => void; reset: (id?: string) => void } }
@@ -82,7 +86,9 @@ export const Turnstile = forwardRef<TurnstileHandle, { onToken: (token: string) 
       };
     }, [onToken]);
 
-    if (!SITE_KEY || isLocalHost()) return null;
+    // Struktur awal harus identik saat SSR dan hydration. Pada localhost dengan
+    // site key production, placeholder tetap dirender tetapi widget tidak dibuat.
+    if (!SITE_KEY) return null;
     return <div ref={elRef} className="my-1 flex justify-center" />;
   },
 );

@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle2, Plus, Printer, ScanLine, ShoppingCart, X, ClipboardList, User, Hash } from 'lucide-react';
+import { CheckCircle2, Plus, Printer, ScanLine, ShoppingCart, X, ClipboardList, User, Hash, LockOpen, Lock, Wallet } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SearchInput, Button, Modal, Input, ConfirmDialog, UpgradeModal } from '@/components/ui';
 import { ProductGrid } from '@/components/pos/ProductGrid';
@@ -10,11 +10,11 @@ import { PaymentModal } from '@/components/pos/PaymentModal';
 import { Receipt } from '@/components/pos/Receipt';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
-import { produkService, jenisBayarService, kategoriService, penjualanService, openBillService, qrisService, taxService, identitasService, modifierService, getErrorMessage } from '@/services';
+import { produkService, jenisBayarService, kategoriService, penjualanService, paymentService, openBillService, qrisService, taxService, identitasService, modifierService, kasShiftService, getErrorMessage } from '@/services';
 import { cn } from '@/utils/cn';
 import { formatRupiah } from '@/utils/format';
 import { printThermal } from '@/utils/printThermal';
-import type { Produk, JenisBayar, Kategori, Penjualan, CheckoutResult, Qris, TaxSetting, Identitas, ModifierGroup, ModifierOption } from '@/types';
+import type { Produk, JenisBayar, Kategori, Penjualan, CheckoutResult, Qris, TaxSetting, Identitas, ModifierGroup, ModifierOption, PlanType, MidtransQrisResult } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
 export default function PosPage() {
@@ -25,7 +25,7 @@ export default function PosPage() {
   const [qris, setQris] = useState<Qris | null>(null);
   const [tax, setTax] = useState<TaxSetting | null>(null);
   const [identitas, setIdentitas] = useState<Identitas | null>(null);
-  const plan = (user?.merchant?.plan as 'FREE' | 'PRO') || 'FREE';
+  const plan = (user?.merchant?.plan as PlanType) || 'FREE';
   const [receiptSize, setReceiptSize] = useState<'58' | '80'>('58');
   const receiptThermalRef = useRef<HTMLDivElement>(null);
   const [kategori, setKategori] = useState<Kategori[]>([]);
@@ -48,10 +48,34 @@ export default function PosPage() {
   const [billForm, setBillForm] = useState({ customer_name: '', table_no: '', note: '' });
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const billCtx = cart.bill;
-  const isPro = plan === 'PRO';
+  const isPro = plan === 'PRO' || plan === 'BUSINESS'; // BUSINESS = superset PRO
+  const [midtransRes, setMidtransRes] = useState<MidtransQrisResult | null>(null);
+
+  // ===== Sesi kasir (shift) =====
+  // null = belum diketahui (loading), true = sesi aktif, false = belum buka.
+  const [shiftActive, setShiftActive] = useState<boolean | null>(null);
+  const [shiftModalOpen, setShiftModalOpen] = useState(false);
+
+  // Cek sesi kasir aktif saat masuk halaman POS. Bila belum ada, tampilkan modal.
+  useEffect(() => {
+    kasShiftService.active()
+      .then((s) => {
+        const ok = !!s;
+        setShiftActive(ok);
+        if (!ok) setShiftModalOpen(true);
+      })
+      .catch(() => setShiftActive(null));
+  }, []);
+
+  // Penjaga aksi transaksi: blokir bila sesi kasir belum dibuka.
+  function requireShift(): boolean {
+    if (shiftActive === false) { setShiftModalOpen(true); return false; }
+    return true;
+  }
 
   // Klik "Simpan Bill": FREE -> modal upgrade; PRO -> modal simpan bill.
   function handleSaveBillClick() {
+    if (!requireShift()) return;
     if (!isPro) { setUpgradeOpen(true); return; }
     setSaveBillOpen(true);
   }
@@ -108,6 +132,7 @@ export default function PosPage() {
   const modCache = useRef<Record<number, ModifierGroup[]>>({});
 
   async function addToCart(p: Produk) {
+    if (!requireShift()) return;
     try {
       let groups = modCache.current[p.ID];
       if (!groups) { groups = (await modifierService.getForProduct(p.ID)) || []; modCache.current[p.ID] = groups; }
@@ -153,12 +178,14 @@ export default function PosPage() {
 
   async function scanBarcode(code: string) {
     if (!code.trim()) return;
+    if (!requireShift()) return;
     try { const p = await produkService.getByBarcode(code.trim()); addToCart(p); setSearch(''); }
     catch { toast.error('Produk barcode tidak ditemukan'); }
   }
 
   async function handleCheckout(data: { id_jenis_bayar: number; bayar: number; keterangan?: string; kode_voucher?: string }) {
     if (!user) return;
+    if (!requireShift()) { setPayOpen(false); return; }
     setCheckingOut(true);
     try {
       // Mode edit bill -> bayar open bill; selain itu checkout langsung biasa.
@@ -189,9 +216,57 @@ export default function PosPage() {
     finally { setCheckingOut(false); }
   }
 
+  // ===== Midtrans QRIS dinamis (khusus BUSINESS) =====
+  // Buat transaksi + QRIS dinamis. Backend memvalidasi plan BUSINESS & menghitung
+  // nominal dari item (merchant_id selalu dari token login).
+  async function handleCreateMidtrans(opts: { keterangan?: string; kode_voucher?: string }) {
+    if (!user) throw new Error('Sesi tidak ditemukan');
+    if (shiftActive === false) { setShiftModalOpen(true); throw new Error('Sesi kasir belum dibuka'); }
+    const qrisMethod = jenisBayar.find((j) => j.NAMA.toUpperCase().includes('QRIS'));
+    const idJenisBayar = qrisMethod?.ID ?? jenisBayar[0]?.ID;
+    const res = await paymentService.createQris({
+      items: cart.items.map((i) => ({ id_produk: i.id_produk, qty: i.qty, modifier_option_ids: i.modifierOptionIds || [] })),
+      id_jenis_bayar: idJenisBayar,
+      id_user: user.id,
+      diskon: cart.diskon,
+      keterangan: opts.keterangan,
+      kode_voucher: opts.kode_voucher,
+    });
+    setMidtransRes(res);
+    return res;
+  }
+
+  // Polling status pembayaran (dipanggil PaymentModal tiap 3 detik).
+  function handlePollMidtrans(transactionId: number) {
+    return paymentService.status(transactionId);
+  }
+
+  // Saat webhook Midtrans menandai PAID -> tampilkan struk & bersihkan keranjang.
+  async function handleMidtransSuccess(transactionId: number) {
+    try {
+      const trx = await penjualanService.getById(transactionId);
+      const result = {
+        id: transactionId,
+        no_nota: midtransRes?.no_nota || String(transactionId),
+        subtotal: cart.total(),
+        diskon: cart.diskon,
+        total: midtransRes?.gross_amount ?? (Number(trx.TOTAL) || 0),
+        bayar: midtransRes?.gross_amount ?? (Number(trx.TOTAL) || 0),
+        kembalian: 0,
+      } as CheckoutResult;
+      cart.clear();
+      setPayOpen(false);
+      setCartOpen(false);
+      setMidtransRes(null);
+      setSuccess({ result, trx });
+      loadProduk(search);
+    } catch (err) { toast.error(getErrorMessage(err)); }
+  }
+
   // Simpan keranjang sebagai open bill baru (status OPEN).
   async function handleSaveBill() {
     if (!user || cart.items.length === 0) return;
+    if (!requireShift()) return;
     setSavingBill(true);
     try {
       await openBillService.create({
@@ -272,8 +347,24 @@ export default function PosPage() {
                   : 'Cari produk, tambahkan ke keranjang, lalu lakukan pembayaran.'}
               </p>
             </div>
-            <div className="hidden rounded-full bg-white/85 px-4 py-2 text-sm font-semibold text-ink shadow-card sm:block">
-              {cart.count()} item di keranjang
+            <div className="flex items-center gap-2">
+              {/* Status sesi kasir */}
+              {shiftActive === true && (
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+                  <LockOpen className="h-4 w-4" /> Sesi kasir aktif
+                </span>
+              )}
+              {shiftActive === false && (
+                <button
+                  onClick={() => router.push('/kasir/closing')}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100"
+                >
+                  <Lock className="h-4 w-4" /> Sesi kasir belum dibuka
+                </button>
+              )}
+              <div className="hidden rounded-full bg-white/85 px-4 py-2 text-sm font-semibold text-ink shadow-card sm:block">
+                {cart.count()} item di keranjang
+              </div>
             </div>
           </div>
 
@@ -336,7 +427,7 @@ export default function PosPage() {
 
         <aside className="hidden w-[300px] shrink-0 border-l border-brand-100 bg-white p-3 xl:w-[340px] xl:p-4 2xl:w-[390px] lg:block">
           <Cart
-                onCheckout={() => setPayOpen(true)}
+                onCheckout={() => { if (requireShift()) setPayOpen(true); }}
                 onSaveBill={() => setSaveBillOpen(true)}
                 onUpdateBill={handleUpdateBill}
                 onCancelBill={() => setCancelOpen(true)}
@@ -364,7 +455,7 @@ export default function PosPage() {
             </div>
             <div className="flex-1 overflow-hidden">
               <Cart
-                onCheckout={() => setPayOpen(true)}
+                onCheckout={() => { if (requireShift()) setPayOpen(true); }}
                 onSaveBill={handleSaveBillClick}
                 onUpdateBill={handleUpdateBill}
                 onCancelBill={() => setCancelOpen(true)}
@@ -382,7 +473,12 @@ export default function PosPage() {
         qris={qris}
         tax={tax}
         loading={checkingOut}
+        plan={plan}
         onConfirm={handleCheckout}
+        // QRIS Midtrans dinamis hanya aktif saat bukan mode edit open bill.
+        onCreateMidtrans={!billCtx ? handleCreateMidtrans : undefined}
+        onPollMidtrans={handlePollMidtrans}
+        onMidtransSuccess={handleMidtransSuccess}
       />
 
       {/* Modal Simpan Bill (open bill baru) */}
@@ -481,6 +577,35 @@ export default function PosPage() {
         message={`Batalkan ${billCtx?.no_bill || 'bill ini'}? Tindakan ini tidak bisa dibatalkan.`}
         confirmLabel="Batalkan Bill"
       />
+
+      {/* Modal: sesi kasir belum dibuka — blokir transaksi */}
+      <Modal
+        open={shiftModalOpen && shiftActive === false}
+        onClose={() => setShiftModalOpen(false)}
+        title="Sesi Kasir Belum Dibuka"
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setShiftModalOpen(false)}>Nanti</Button>
+            <Button onClick={() => router.push('/kasir/closing')}>
+              <LockOpen className="h-4 w-4" /> Buka Kasir Sekarang
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col items-center gap-3 py-2 text-center">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+            <Wallet className="h-7 w-7" />
+          </span>
+          <p className="text-sm text-slate-600">
+            Sebelum mulai melayani transaksi, kamu harus <b className="font-semibold text-ink">membuka sesi kasir</b> terlebih dahulu.
+            Semua penjualanmu akan tercatat di sesi ini supaya bisa dicocokkan saat tutup kasir.
+          </p>
+          <p className="text-sm text-slate-500">
+            Klik tombol di bawah untuk menuju halaman <b className="font-semibold text-ink">Buka/Tutup Kasir</b>.
+          </p>
+        </div>
+      </Modal>
 
       <Modal
         open={!!success}

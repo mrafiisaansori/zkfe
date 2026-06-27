@@ -3,16 +3,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, Input, type Column } from '@/components/ui';
+import { Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, Input, UpgradeModal, type Column } from '@/components/ui';
 import { voucherService, getErrorMessage } from '@/services';
 import type { VoucherInput } from '@/services/voucher.service';
 import type { Voucher } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { formatRupiah } from '@/utils/format';
+import { useAuthStore } from '@/stores/authStore';
 
 const empty: VoucherInput = { kode: '', tipe: 'NOMINAL', nilai: 0, min_transaksi: 0, valid_from: '', valid_until: '', is_active: true };
 
 export default function VoucherPage() {
+  const user = useAuthStore((s) => s.user);
+  const isPro = user?.merchant?.plan === 'PRO' || user?.merchant?.plan === 'BUSINESS';
   const [data, setData] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
   usePageLoading(loading);
@@ -22,14 +25,17 @@ export default function VoucherPage() {
   const [saving, setSaving] = useState(false);
   const [toDelete, setToDelete] = useState<Voucher | null>(null);
   const [busy, setBusy] = useState(false);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const load = useCallback(async () => {
+    if (!user || !isPro) { setLoading(false); return; }
     setLoading(true);
     try { setData((await voucherService.list()) || []); }
     catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
-  }, []);
+  }, [user, isPro]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { if (user && !isPro) setUpgradeOpen(true); }, [user, isPro]);
 
   function openCreate() { setEditing(null); setForm(empty); setFormOpen(true); }
   function openEdit(v: Voucher) {
@@ -71,8 +77,16 @@ export default function VoucherPage() {
   return (
     <div>
       <PageHeader title="Voucher / Promo" description="Kode diskon yang bisa dipakai kasir saat checkout."
-        action={<Button onClick={openCreate}><Plus className="h-4 w-4" /> Tambah</Button>} />
-      <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
+        action={isPro ? <Button onClick={openCreate}><Plus className="h-4 w-4" /> Tambah</Button> : undefined} />
+      {isPro ? (
+        <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
+      ) : (
+        <Card><CardBody className="py-10 text-center">
+          <p className="font-semibold text-slate-800">Voucher dan promo tersedia mulai paket PRO.</p>
+          <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">Kelola kode promo, periode berlaku, dan minimal transaksi dengan kontrol yang lebih profesional.</p>
+          <Button className="mt-5" onClick={() => setUpgradeOpen(true)}>Upgrade ke PRO</Button>
+        </CardBody></Card>
+      )}
 
       <Modal open={formOpen} onClose={() => setFormOpen(false)} title={editing ? 'Edit Voucher' : 'Tambah Voucher'} size="sm"
         footer={<><Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>Batal</Button><Button onClick={save} loading={saving}>Simpan</Button></>}>
@@ -102,6 +116,13 @@ export default function VoucherPage() {
 
       <ConfirmDialog open={!!toDelete} onClose={() => setToDelete(null)} onConfirm={handleDelete} loading={busy}
         title="Hapus voucher" message={`Hapus voucher "${toDelete?.KODE}"?`} confirmLabel="Hapus" />
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        title="Voucher & Promo tersedia di PRO"
+        description="Fitur Voucher, Pajak, dan Service Charge tersedia untuk paket PRO. Upgrade sekarang untuk mengelola promo dan biaya layanan dengan lebih profesional."
+        benefits={['Buat voucher dan promo', 'Atur pajak dan service charge', 'Struk tanpa branding Zona Kasir']}
+      />
     </div>
   );
 }

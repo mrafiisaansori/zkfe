@@ -67,7 +67,11 @@ export default function UserPage() {
   const columns: Column<Pengguna>[] = [
     { header: 'Nama', accessor: (r) => <span className="font-medium text-slate-800">{r.NAMA}</span> },
     { header: 'Username', accessor: (r) => r.USERNAME },
-    { header: 'Role', accessor: (r) => <Badge tone={r.LEVEL === 1 ? 'blue' : 'slate'}>{r.LEVEL === 1 ? 'Admin' : 'Kasir'}</Badge> },
+    { header: 'Role', accessor: (r) => {
+      const label = r.LEVEL === 1 ? 'Admin' : r.LEVEL === 3 ? 'Gudang' : 'Kasir';
+      const tone = r.LEVEL === 1 ? 'blue' : r.LEVEL === 3 ? 'amber' : 'slate';
+      return <Badge tone={tone}>{label}</Badge>;
+    } },
     { header: 'Telp', accessor: (r) => r.TELP || '-' },
     { header: 'Aksi', accessor: (r) => (
       <div className="flex gap-1">
@@ -80,7 +84,7 @@ export default function UserPage() {
 
   return (
     <div>
-      <PageHeader title="Pengguna" description="Manajemen akun admin & kasir"
+      <PageHeader title="Pengguna" description="Manajemen akun kasir & gudang"
         action={<Button onClick={() => { setEditing(null); setFormOpen(true); }}><Plus className="h-4 w-4" /> Tambah</Button>} />
       <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
 

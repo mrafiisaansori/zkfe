@@ -27,9 +27,12 @@ export function BrandLogo({
   size?: Size;
   className?: string;
 }) {
+  // Latar gelap (sidebar / menu mobile setelah login) memakai logo putih,
+  // latar terang (header, halaman login) memakai logo berwarna.
+  const logoSrc = tone === 'dark' ? '/brand/logo-baru-putih.png' : '/brand/zona-kasir-icon.png';
   const icon = (
     <span className={cn('relative shrink-0 overflow-hidden rounded-xl', iconSizes[size])}>
-      <Image src="/brand/zona-kasir-icon.svg" alt="Zona Kasir" fill sizes="44px" className="object-contain" priority />
+      <Image src={logoSrc} alt="Zona Kasir" fill sizes="44px" className="object-contain" priority />
     </span>
   );
 

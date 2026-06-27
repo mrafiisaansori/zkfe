@@ -34,7 +34,7 @@ function formatTime(iso?: string) {
 export default function OpenBillPage() {
   const router = useRouter();
   const plan = useAuthStore((s) => s.user?.merchant?.plan);
-  const isPro = plan === 'PRO';
+  const isPro = plan === 'PRO' || plan === 'BUSINESS'; // BUSINESS = superset PRO
   const [data, setData] = useState<OpenBill[]>([]);
   const [loading, setLoading] = useState(true);
   usePageLoading(loading);

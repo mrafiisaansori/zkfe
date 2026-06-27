@@ -5,10 +5,10 @@ import { Modal } from './Modal';
 import { Button } from './Button';
 
 const DEFAULT_BENEFITS = [
-  'Bisa menggunakan Open Bill',
-  'Bisa multiple kasir',
-  'Bisa tambah produk lebih dari 50',
-  'Struk tanpa branding Zona Kasir',
+  'Tambah produk lebih banyak (FREE maksimal 20)',
+  'Multiple kasir',
+  'Open Bill, voucher, pajak & service charge',
+  'Laporan lengkap & struk tanpa branding Zona Kasir',
 ];
 
 interface Props {

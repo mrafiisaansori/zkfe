@@ -1,18 +1,18 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { navForRole, isNavItemActive } from '@/constants/nav';
+import { flatNavForRole, isHrefActive } from '@/constants/nav';
 import { useAuthStore } from '@/stores/authStore';
 import { useUIStore } from '@/stores/uiStore';
 import { cn } from '@/utils/cn';
 
-// Bottom navigation untuk mobile (maks 5 item utama).
+// Bottom navigation untuk mobile (maks 5 item utama, leaf datar).
 export function MobileNavbar() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const setNavLoading = useUIStore((s) => s.setNavLoading);
   if (!user) return null;
-  const allItems = navForRole(user.role);
+  const allItems = flatNavForRole(user.role);
   const items = allItems.slice(0, 5);
   const isKasir = user.role === 'kasir';
 
@@ -22,7 +22,7 @@ export function MobileNavbar() {
       isKasir ? 'border border-brand-100 bg-white/95' : 'border border-line/80 bg-white/90',
     )}>
       {items.map((item) => {
-        const active = isNavItemActive(pathname, item.href, allItems);
+        const active = isHrefActive(pathname, item.href, allItems);
         const Icon = item.icon;
         return (
           <Link

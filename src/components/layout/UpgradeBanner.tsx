@@ -4,7 +4,7 @@ import { Crown, Check, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
 const BENEFITS = [
-  'Tambah produk lebih dari 50',
+  'Tambah produk lebih banyak (FREE maksimal 20)',
   'Multiple kasir',
   'Open Bill untuk cafe / coffee shop',
   'Struk tanpa branding Zona Kasir',
@@ -16,7 +16,7 @@ const BENEFITS = [
  */
 export function UpgradeBanner() {
   const plan = useAuthStore((s) => s.user?.merchant?.plan);
-  if (plan === 'PRO') return null; // sudah PRO: tidak perlu banner
+  if (plan === 'PRO' || plan === 'BUSINESS') return null; // sudah berbayar: tidak perlu banner
 
   return (
     <div className="mb-5 overflow-hidden rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-accent/10 p-5 shadow-card">

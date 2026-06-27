@@ -9,13 +9,22 @@ import { UpgradeBanner } from '@/components/layout/UpgradeBanner';
 import { StatCard } from '@/components/layout/StatCard';
 import { Card, CardBody, LoadingState, ErrorState, Badge, Skeleton, StatCardSkeleton } from '@/components/ui';
 import { dashboardService, getErrorMessage } from '@/services';
+import { useAuthStore } from '@/stores/authStore';
 import type { DashboardSummary } from '@/types';
 import { formatRupiah } from '@/utils/format';
 import { usePageLoading } from '@/hooks/usePageLoading';
+import { GudangDashboard } from './GudangDashboard';
 
 const BULAN = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 
 export default function AdminDashboard() {
+  // Role Gudang melihat dashboard operasional (tanpa data keuangan).
+  const role = useAuthStore((s) => s.user?.role);
+  if (role === 'gudang') return <GudangDashboard />;
+  return <FinanceDashboard />;
+}
+
+function FinanceDashboard() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [chart, setChart] = useState<{ name: string; omzet: number; laba: number }[]>([]);
   const [loading, setLoading] = useState(true);
