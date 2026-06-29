@@ -33,7 +33,7 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthShell maxWidth="md">
+    <AuthShell maxWidth="md" contentAlign="center">
       <AuthLoadingOverlay show={loading} label="Sedang masuk ke akun..." />
       <div>
         <div className="mb-7">

@@ -94,10 +94,12 @@ export function AuthShell({
   children,
   maxWidth = 'md',
   className,
+  contentAlign = 'start',
 }: {
   children: ReactNode;
   maxWidth?: MaxWidth;
   className?: string;
+  contentAlign?: 'start' | 'center';
 }) {
   const [activeSlide, setActiveSlide] = useState(0);
   const slide = featureSlides[activeSlide];
@@ -116,8 +118,8 @@ export function AuthShell({
   }
 
   return (
-    <main className="min-h-screen overflow-x-hidden bg-canvas lg:h-screen lg:overflow-hidden">
-      <section className="grid min-h-screen w-full bg-white lg:h-screen lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.78fr)] lg:overflow-hidden xl:grid-cols-[minmax(0,1.05fr)_minmax(460px,0.75fr)]">
+    <main className="min-h-[100dvh] overflow-x-hidden bg-canvas lg:h-[100dvh] lg:overflow-hidden">
+      <section className="grid min-h-[100dvh] w-full bg-white lg:h-[100dvh] lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.78fr)] lg:overflow-hidden xl:grid-cols-[minmax(0,1.05fr)_minmax(460px,0.75fr)]">
         <aside className="relative hidden h-screen overflow-hidden bg-[#eef6fb] p-6 lg:flex lg:flex-col xl:p-8">
           <span aria-hidden className="zk-pattern-diagonal pointer-events-none absolute inset-0 opacity-70" />
           <span aria-hidden className="pointer-events-none absolute -left-32 top-24 h-80 w-80 rounded-full bg-white/70" />
@@ -204,7 +206,7 @@ export function AuthShell({
                   </div>
                 </div>
 
-                <div className="absolute -bottom-4 left-6 right-6 rounded-2xl border border-brand-100 bg-white/95 px-4 py-3 shadow-soft [@media(max-height:760px)]:hidden">
+                <div className="absolute -bottom-4 left-6 right-6 rounded-2xl border border-brand-100 bg-white/95 px-4 py-3 shadow-soft [@media(max-height:1000px)]:hidden">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold text-slate-500">Mode kasir</p>
@@ -247,8 +249,17 @@ export function AuthShell({
           </div>
         </aside>
 
-        <section className="relative flex min-h-screen items-center justify-center overflow-y-auto bg-white px-5 py-5 sm:px-8 lg:h-screen lg:min-h-0 lg:px-10 lg:py-4 xl:px-14">
-          <div className={cn('w-full', widthClass[maxWidth], className)}>
+        <section className="relative flex min-h-[100dvh] items-start justify-center overflow-y-auto bg-white px-5 py-8 sm:px-8 sm:py-10 lg:h-[100dvh] lg:min-h-0 lg:px-10 lg:py-0 xl:px-14">
+          <div
+            className={cn(
+              'w-full',
+              contentAlign === 'center'
+                ? 'my-auto py-0'
+                : 'py-0 lg:py-[clamp(3rem,9vh,6rem)] [@media(min-width:1024px)_and_(max-height:820px)]:py-[clamp(2.5rem,7vh,4rem)]',
+              widthClass[maxWidth],
+              className,
+            )}
+          >
             <div className="mb-7 flex justify-center lg:hidden">
               <BrandLogo size="lg" />
             </div>
