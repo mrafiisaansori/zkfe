@@ -84,6 +84,9 @@ export default function RiwayatKasirPage() {
       {/* Rekap total untuk memudahkan kasir merekap penjualan */}
       {!loading && rekap.jumlah > 0 && (
         <Card className="mt-4"><CardBody>
+          <p className="mb-3 text-xs font-medium text-slate-500">
+            Rekap ini hanya menampilkan transaksi kasir login: {user?.nama || 'Kasir'}.
+          </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex items-center gap-3 rounded-xl bg-brand-50 p-4">
               <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-brand-600"><ReceiptText className="h-5 w-5" /></span>

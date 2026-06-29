@@ -9,9 +9,10 @@ interface CartProps {
   onSaveBill?: () => void;     // Simpan sebagai open bill (mode transaksi baru)
   onUpdateBill?: () => void;   // Simpan perubahan (mode edit bill)
   onCancelBill?: () => void;   // Batalkan open bill (mode edit bill)
+  onSplitBill?: () => void;    // Bayar sebagian item bill
 }
 
-export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill }: CartProps) {
+export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSplitBill }: CartProps) {
   const { items, updateQty, removeItem, subtotal, total, diskon, setDiskon, clear, bill } = useCartStore();
   const billMode = !!bill;
 
@@ -176,6 +177,16 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill }: Car
             >
               Bayar
             </Button>
+            {onSplitBill && (
+              <Button
+                variant="outline"
+                className="h-11 w-full rounded-2xl text-sm font-bold"
+                disabled={items.length === 0}
+                onClick={onSplitBill}
+              >
+                <ClipboardList className="h-4 w-4" /> Split Bill
+              </Button>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <Button
                 variant="outline"
@@ -203,8 +214,18 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill }: Car
               disabled={items.length === 0}
               onClick={onCheckout}
             >
-              Bayar Sekarang
+              Bayar Semua
             </Button>
+            {onSplitBill && (
+              <Button
+                variant="outline"
+                className="h-11 w-full rounded-2xl text-sm font-bold"
+                disabled={items.length === 0}
+                onClick={onSplitBill}
+              >
+                <ClipboardList className="h-4 w-4" /> Split Bill
+              </Button>
+            )}
             {onSaveBill && (
               <Button
                 variant="outline"

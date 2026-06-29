@@ -2,7 +2,7 @@ import { get, getWithMeta, post, type ApiDataWithMeta, type PaginationMeta } fro
 import type { Penjualan, CheckoutResult } from '@/types';
 
 export interface CheckoutInput {
-  items: { id_produk: number; qty: number; diskon?: number }[];
+  items: { id_produk: number; qty: number; diskon?: number; modifier_option_ids?: number[] }[];
   id_jenis_bayar: number;
   id_user: number;
   bayar?: number;

@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Pencil, Trash2, CreditCard } from 'lucide-react';
+import { Pencil, Trash2, CreditCard, Scissors } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardBody, Button, DataTable, ConfirmDialog, Badge, SearchInput, Pagination, type Column } from '@/components/ui';
@@ -70,6 +70,7 @@ export default function OpenBillPage() {
   }
 
   const openBill = (id: number) => router.push(`/kasir/pos?bill=${id}`);
+  const splitBill = (id: number) => router.push(`/kasir/pos?bill=${id}&split=1`);
 
   const columns: Column<OpenBill>[] = [
     { header: 'No Bill', accessor: (r) => <span className="font-semibold text-slate-800">{r.NO_BILL || '-'}</span> },
@@ -86,6 +87,7 @@ export default function OpenBillPage() {
           <div className="flex gap-1">
             <Button variant="ghost" size="sm" onClick={() => openBill(r.ID)} title="Buka / edit"><Pencil className="h-4 w-4" /></Button>
             <Button variant="ghost" size="sm" onClick={() => openBill(r.ID)} title="Bayar"><CreditCard className="h-4 w-4 text-emerald-600" /></Button>
+            <Button variant="ghost" size="sm" onClick={() => splitBill(r.ID)} title="Split Bill"><Scissors className="h-4 w-4 text-primary" /></Button>
             <Button variant="ghost" size="sm" onClick={() => setToCancel(r)} title="Batalkan"><Trash2 className="h-4 w-4 text-rose-500" /></Button>
           </div>
         ) : (

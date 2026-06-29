@@ -7,6 +7,7 @@ import { SearchInput, Button, Modal, Input, ConfirmDialog, UpgradeModal } from '
 import { ProductGrid } from '@/components/pos/ProductGrid';
 import { Cart } from '@/components/pos/Cart';
 import { PaymentModal } from '@/components/pos/PaymentModal';
+import { SplitBillModal, type SplitConfirmData } from '@/components/pos/SplitBillModal';
 import { Receipt } from '@/components/pos/Receipt';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -46,7 +47,9 @@ export default function PosPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const billParam = searchParams.get('bill');
+  const splitParam = searchParams.get('split');
   const [saveBillOpen, setSaveBillOpen] = useState(false);
+  const [splitBillOpen, setSplitBillOpen] = useState(false);
   const [savingBill, setSavingBill] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [billForm, setBillForm] = useState({ customer_name: '', table_no: '', note: '' });
@@ -105,6 +108,12 @@ export default function PosPage() {
     if (cart.bill && produk.length) cart.hydrateImages(produk);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [produk, cart.bill?.id]);
+
+  useEffect(() => {
+    if (splitParam === '1' && billCtx && cart.items.length > 0) {
+      setSplitBillOpen(true);
+    }
+  }, [splitParam, billCtx?.id, cart.items.length]);
 
   const loadProduk = useCallback(async (
     q = '',
@@ -237,6 +246,110 @@ export default function PosPage() {
       loadProduk(search, 1, false, activeKat);
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setCheckingOut(false); }
+  }
+
+  function reduceSplitCart(lines: { lineId: string; qty: number }[]) {
+    lines.forEach((line) => {
+      const current = cart.items.find((item) => item.lineId === line.lineId);
+      if (!current) return;
+      cart.updateQty(line.lineId, Math.max(0, Number(current.qty || 0) - Number(line.qty || 0)));
+    });
+  }
+
+  async function handleSplitBillPay(data: SplitConfirmData) {
+    if (!requireShift()) { setSplitBillOpen(false); return; }
+    if (!user) return;
+    setCheckingOut(true);
+    try {
+      const result = billCtx
+        ? await openBillService.payPartial(billCtx.id, data)
+        : await penjualanService.checkout({
+            items: data.checkout_items,
+            id_jenis_bayar: data.id_jenis_bayar,
+            id_user: user.id,
+            bayar: data.bayar,
+            keterangan: data.keterangan,
+          });
+      const trx = await penjualanService.getById(result.id);
+      setSuccess({ result, trx });
+      setCartOpen(false);
+
+      if (billCtx) {
+        if ('bill_status' in result && result.bill_status === 'PAID') {
+          cart.clear();
+          setSplitBillOpen(false);
+          router.replace('/kasir/pos');
+          toast.success('Split bill selesai, semua item sudah lunas');
+        } else {
+          const fresh = await openBillService.getById(billCtx.id);
+          cart.loadBill(fresh);
+          const remainingTotal = 'remaining_total' in result ? Number(result.remaining_total || 0) : 0;
+          toast.success(`Split bill dibayar. Sisa bill ${formatRupiah(remainingTotal)}`);
+        }
+      } else {
+        reduceSplitCart(data.line_items);
+        toast.success('Split bill dibayar');
+        const remainingCount = data.line_items.reduce((sum, line) => {
+          const current = cart.items.find((item) => item.lineId === line.lineId);
+          return sum + Math.max(0, Number(current?.qty || 0) - Number(line.qty || 0));
+        }, 0);
+        if (remainingCount <= 0) setSplitBillOpen(false);
+      }
+      if (billCtx && !('bill_status' in result)) {
+        const fresh = await openBillService.getById(billCtx.id);
+        cart.loadBill(fresh);
+      }
+      loadProduk(search, 1, false, activeKat);
+    } catch (err) { toast.error(getErrorMessage(err)); }
+    finally { setCheckingOut(false); }
+  }
+
+  async function handleCreateSplitMidtrans(data: SplitConfirmData) {
+    if (!user) throw new Error('Sesi tidak ditemukan');
+    if (shiftActive === false) { setShiftModalOpen(true); throw new Error('Sesi kasir belum dibuka'); }
+    if (billCtx) {
+      return openBillService.createPartialQris(billCtx.id, {
+        payer_name: data.payer_name,
+        items: data.items,
+        id_jenis_bayar: data.id_jenis_bayar,
+        keterangan: data.keterangan,
+        customer_name: data.payer_name,
+      });
+    }
+    return paymentService.createQris({
+      items: data.checkout_items,
+      id_jenis_bayar: data.id_jenis_bayar,
+      id_user: user.id,
+      keterangan: data.keterangan,
+      customer_name: data.payer_name,
+    });
+  }
+
+  async function handleSplitMidtransPaid(data: SplitConfirmData, transactionId: number) {
+    const trx = await penjualanService.getById(transactionId);
+    const result = {
+      id: transactionId,
+      no_nota: String(transactionId),
+      subtotal: Number(trx.TOTAL) || 0,
+      diskon: 0,
+      total: Number(trx.TOTAL) || 0,
+      bayar: Number(trx.TOTAL) || 0,
+      kembalian: 0,
+    } as CheckoutResult;
+    setSuccess({ result, trx });
+    if (billCtx) {
+      const fresh = await openBillService.getById(billCtx.id);
+      if (fresh.STATUS === 'PAID') {
+        cart.clear();
+        setSplitBillOpen(false);
+        router.replace('/kasir/pos');
+      } else {
+        cart.loadBill(fresh);
+      }
+    } else {
+      reduceSplitCart(data.line_items);
+    }
+    loadProduk(search, 1, false, activeKat);
   }
 
   // ===== Midtrans QRIS dinamis (khusus BUSINESS) =====
@@ -462,8 +575,9 @@ export default function PosPage() {
         <aside className="hidden w-[300px] shrink-0 border-l border-brand-100 bg-white p-3 xl:w-[340px] xl:p-4 2xl:w-[390px] lg:block">
           <Cart
                 onCheckout={() => { if (requireShift()) setPayOpen(true); }}
-                onSaveBill={() => setSaveBillOpen(true)}
+                onSaveBill={handleSaveBillClick}
                 onUpdateBill={handleUpdateBill}
+                onSplitBill={() => { if (requireShift()) setSplitBillOpen(true); }}
                 onCancelBill={() => setCancelOpen(true)}
               />
         </aside>
@@ -492,6 +606,7 @@ export default function PosPage() {
                 onCheckout={() => { if (requireShift()) setPayOpen(true); }}
                 onSaveBill={handleSaveBillClick}
                 onUpdateBill={handleUpdateBill}
+                onSplitBill={() => { if (requireShift()) setSplitBillOpen(true); }}
                 onCancelBill={() => setCancelOpen(true)}
               />
             </div>
@@ -513,6 +628,21 @@ export default function PosPage() {
         onCreateMidtrans={!billCtx ? handleCreateMidtrans : undefined}
         onPollMidtrans={handlePollMidtrans}
         onMidtransSuccess={handleMidtransSuccess}
+      />
+
+      <SplitBillModal
+        open={splitBillOpen}
+        onClose={() => setSplitBillOpen(false)}
+        items={cart.items}
+        jenisBayar={jenisBayar}
+        qris={qris}
+        tax={tax}
+        plan={plan}
+        loading={checkingOut}
+        onConfirm={handleSplitBillPay}
+        onCreateMidtrans={handleCreateSplitMidtrans}
+        onPollMidtrans={handlePollMidtrans}
+        onMidtransPaid={handleSplitMidtransPaid}
       />
 
       {/* Modal Simpan Bill (open bill baru) */}

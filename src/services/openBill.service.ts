@@ -1,5 +1,5 @@
 import { get, getWithMeta, post, put, type ApiDataWithMeta, type PaginationMeta } from './api';
-import type { OpenBill, OpenBillStatus, CheckoutResult } from '@/types';
+import type { OpenBill, OpenBillStatus, CheckoutResult, MidtransQrisResult } from '@/types';
 
 export interface OpenBillItemInput {
   id_produk: number;
@@ -21,6 +21,20 @@ export interface OpenBillPayInput {
   keterangan?: string;
 }
 
+export interface OpenBillPartialPayInput extends OpenBillPayInput {
+  payer_name?: string;
+  items: { id_open_bill_detail: number; qty: number }[];
+}
+
+export interface OpenBillPartialQrisInput {
+  payer_name?: string;
+  items: { id_open_bill_detail: number; qty: number }[];
+  id_jenis_bayar: number;
+  diskon?: number;
+  keterangan?: string;
+  customer_name?: string;
+}
+
 // Catatan keamanan: id_user & merchant_id TIDAK dikirim dari frontend —
 // backend mengambilnya dari token (sesi login).
 export const openBillService = {
@@ -33,5 +47,9 @@ export const openBillService = {
   update: (id: number, data: OpenBillInput) => put<OpenBill>(`/open-bill/${id}`, data),
   pay: (id: number, data: OpenBillPayInput) =>
     post<CheckoutResult & { no_bill: string }>(`/open-bill/${id}/pay`, data),
+  payPartial: (id: number, data: OpenBillPartialPayInput) =>
+    post<CheckoutResult & { no_bill: string; split_no: number; payer_name: string; bill_status: OpenBillStatus; remaining_total: number }>(`/open-bill/${id}/pay-partial`, data),
+  createPartialQris: (id: number, data: OpenBillPartialQrisInput) =>
+    post<MidtransQrisResult>(`/open-bill/${id}/pay-partial/qris/create`, data),
   cancel: (id: number) => post(`/open-bill/${id}/cancel`),
 };

@@ -463,6 +463,7 @@ export interface LaporanPendapatan {
 
 export interface CartItem {
   lineId: string;       // identitas baris unik (produk yg sama + varian beda = baris beda)
+  openBillDetailId?: number; // ada saat item berasal dari open bill
   id_produk: number;
   nama: string;
   harga: number;        // harga dasar produk
@@ -484,6 +485,7 @@ export interface OpenBillDetail {
   HARGA_BELI: number;
   HARGA_JUAL: number;
   QTY: number;
+  PAID_QTY?: number;
   MODIFIER?: string | null;
   MODIFIER_OPTIONS?: string | null;
   NOTE?: string | null;
@@ -503,4 +505,20 @@ export interface OpenBill {
   CREATED_AT?: string;
   kasir?: { ID: number; NAMA: string };
   detail?: OpenBillDetail[];
+  payments?: OpenBillPayment[];
+}
+
+export interface OpenBillPayment {
+  ID: number;
+  ID_OPEN_BILL: number;
+  ID_PENJUALAN: number;
+  SPLIT_NO: number;
+  PAYER_NAME: string | null;
+  TOTAL: number;
+  ID_JENIS_BAYAR: number | null;
+  BAYAR: number | null;
+  KEMBALIAN: number | null;
+  NOTE: string | null;
+  CREATED_AT?: string;
+  jenisBayar?: { ID: number; NAMA: string };
 }

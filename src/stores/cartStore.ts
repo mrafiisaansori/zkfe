@@ -99,15 +99,16 @@ export const useCartStore = create<CartState>((set, get) => ({
     },
     items: (bill.detail || []).map((d) => ({
       lineId: newLineId(),
+      openBillDetailId: d.ID,
       id_produk: d.ID_PRODUK,
       nama: d.produk?.NAMA || `Produk ${d.ID_PRODUK}`,
       harga: d.HARGA_JUAL, // sudah harga efektif (termasuk varian)
-      qty: d.QTY,
+      qty: Math.max(0, Number(d.QTY || 0) - Number(d.PAID_QTY || 0)),
       stok: d.produk?.STOK ?? d.QTY,
       modifierExtra: 0,
       modifierText: d.MODIFIER || null,
       modifierOptionIds: d.MODIFIER_OPTIONS ? String(d.MODIFIER_OPTIONS).split(',').map(Number).filter(Boolean) : [],
-    })),
+    })).filter((i) => i.qty > 0),
   }),
 
   setBillMeta: (patch) => set((s) => (s.bill ? { bill: { ...s.bill, ...patch } } : {})),
