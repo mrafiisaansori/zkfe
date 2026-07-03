@@ -13,15 +13,18 @@ import { formatRupiah, formatDate, todayISO } from '@/utils/format';
 import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
-// Label singkat sesi kasir untuk dropdown filter, mis. "Sesi (19:00 - 22:00)"
-// atau "Sesi (22:00 - sekarang)" bila masih berjalan.
+// Label sesi kasir untuk dropdown filter, mis. "Senin, 20 Oktober 2025 (19:00 - 22:00)"
+// atau "... (22:00 - sekarang)" bila masih berjalan.
 function shiftLabel(s: KasShift): string {
   const jam = (iso: string | null) => {
     if (!iso) return '-';
     const d = new Date(iso);
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   };
-  return `Sesi (${jam(s.BUKA_AT)} - ${s.STATUS === 1 ? 'sekarang' : jam(s.TUTUP_AT)})`;
+  const hariTanggal = s.BUKA_AT
+    ? new Date(s.BUKA_AT).toLocaleDateString('id-ID', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })
+    : '-';
+  return `${hariTanggal} (${jam(s.BUKA_AT)} - ${s.STATUS === 1 ? 'sekarang' : jam(s.TUTUP_AT)})`;
 }
 
 export default function RiwayatKasirPage() {
@@ -106,7 +109,7 @@ export default function RiwayatKasirPage() {
               options={[{ value: 0, label: 'Semua metode' }, ...jenisBayar.map((j) => ({ value: j.ID, label: j.NAMA }))]}
             />
           </div>
-          <div className="w-full sm:w-60">
+          <div className="w-full sm:w-80">
             <SelectMenu
               label="Sesi kasir"
               value={shiftId}
