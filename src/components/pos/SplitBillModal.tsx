@@ -315,20 +315,20 @@ export function SplitBillModal({
 
         <div className="space-y-3">
           {byPerson.map((row) => (
-            <div key={row.person} className={cn('rounded-2xl border p-4', row.person % 2 === 1 ? 'border-blue-200 bg-blue-50/70' : 'border-amber-200 bg-amber-50/70')}>
+            <div key={row.person} className={cn('rounded-2xl border p-4', row.person % 2 === 1 ? 'border-blue-200 bg-blue-50/70 dark:border-blue-500/30 dark:bg-blue-500/10' : 'border-amber-200 bg-amber-50/70 dark:border-amber-500/30 dark:bg-amber-500/10')}>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-base font-black text-white shadow-card', row.person % 2 === 1 ? 'bg-blue-500' : 'bg-amber-500')}>{row.person}</span>
-                  <div className="min-w-0"><p className="font-black text-slate-950">Orang {row.person}</p><p className="text-xs text-slate-500">{row.chips.length} item</p></div>
+                  <div className="min-w-0"><p className="font-black text-slate-900">Orang {row.person}</p><p className="text-xs text-slate-500">{row.chips.length} item</p></div>
                 </div>
                 <div className="flex items-center justify-between gap-3 sm:justify-end">
-                  <span className="text-xl font-black text-slate-950">{formatRupiah(row.total)}</span>
+                  <span className="text-xl font-black text-slate-900">{formatRupiah(row.total)}</span>
                   <Button size="sm" className="rounded-xl bg-primary px-5 shadow-card hover:bg-brand-700" disabled={row.chips.length === 0 || loading} onClick={() => openPayment(row.person)}>Bayar</Button>
                 </div>
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {row.chips.map((chip) => (
-                  <button key={chip.id} type="button" onClick={() => moveChip(chip.id)} title={chip.modifierText || chip.label} className={cn('inline-flex max-w-full items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-semibold transition-colors', row.person % 2 === 1 ? 'border-blue-200 text-blue-700 hover:bg-blue-100' : 'border-amber-200 text-amber-700 hover:bg-amber-100')}>
+                  <button key={chip.id} type="button" onClick={() => moveChip(chip.id)} title={chip.modifierText || chip.label} className={cn('inline-flex max-w-full items-center gap-1 rounded-lg border bg-white px-3 py-1.5 text-xs font-semibold transition-colors', row.person % 2 === 1 ? 'border-blue-200 text-blue-700 hover:bg-blue-100 dark:border-blue-500/30 dark:text-blue-300 dark:hover:bg-blue-500/15' : 'border-amber-200 text-amber-700 hover:bg-amber-100 dark:border-amber-500/30 dark:text-amber-300 dark:hover:bg-amber-500/15')}>
                     <span className="truncate">{chip.label}</span><ArrowRight className="h-3 w-3 shrink-0" />
                   </button>
                 ))}
@@ -341,7 +341,7 @@ export function SplitBillModal({
         {activeData && (
           <div className="rounded-2xl border border-primary/25 bg-white p-4 shadow-card">
             <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 font-black text-slate-950"><ReceiptText className="h-5 w-5 text-primary" /> Bayar {activeLabel}</div>
+              <div className="flex items-center gap-2 font-black text-slate-900"><ReceiptText className="h-5 w-5 text-primary" /> Bayar {activeLabel}</div>
               <span className="text-xl font-black text-primary">{formatRupiah(activeData.total)}</span>
             </div>
 
@@ -378,7 +378,7 @@ export function SplitBillModal({
                       <p className="mt-2 text-xs text-slate-500">Konfirmasi setelah pembayaran diterima.</p>
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-700"><AlertTriangle className="mx-auto mb-2 h-7 w-7" /> QRIS belum diatur di Pengaturan Pembayaran.</div>
+                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-center text-sm text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"><AlertTriangle className="mx-auto mb-2 h-7 w-7" /> QRIS belum diatur di Pengaturan Pembayaran.</div>
                   )
                 ) : (
                   <>
@@ -390,7 +390,7 @@ export function SplitBillModal({
                 {!isMidtrans && (
                   <>
                     <Input label={isTransfer ? 'Referensi transfer / keterangan' : 'Keterangan'} value={keterangan} onChange={(e) => setKeterangan(e.target.value)} placeholder="opsional" />
-                    {!isQrisManual && <div className={cn('rounded-xl px-3 py-2 text-sm font-bold', kurang ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600')}>{kurang ? `Kurang ${formatRupiah(activeData.total - paidAmount)}` : `Kembalian ${formatRupiah(paidAmount - activeData.total)}`}</div>}
+                    {!isQrisManual && <div className={cn('rounded-xl px-3 py-2 text-sm font-bold', kurang ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300')}>{kurang ? `Kurang ${formatRupiah(activeData.total - paidAmount)}` : `Kembalian ${formatRupiah(paidAmount - activeData.total)}`}</div>}
                     <div className="grid grid-cols-2 gap-2">
                       <Button variant="outline" onClick={() => setActivePerson(null)} disabled={loading}>Batal</Button>
                       <Button variant="gradient" className="bg-primary hover:bg-brand-700" onClick={confirmPayment} loading={loading} disabled={!metode || kurang || (isQrisManual && !qrisAvailable)}>
@@ -425,10 +425,10 @@ function MidtransPanel({ phase, data, msg, checkingStatus, onCreate, onCheck }: 
     return <div className="rounded-2xl border border-line p-6 text-center text-sm text-slate-500"><Loader2 className="mx-auto mb-2 h-7 w-7 animate-spin text-primary" /> Membuat QRIS...</div>;
   }
   if (phase === 'failed') {
-    return <div className="space-y-3"><div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center text-sm text-rose-700"><AlertTriangle className="mx-auto mb-2 h-7 w-7" /> {msg || 'Pembayaran belum selesai.'}</div><Button variant="outline" className="w-full" onClick={onCreate}>Buat Ulang QRIS</Button></div>;
+    return <div className="space-y-3"><div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-center text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300"><AlertTriangle className="mx-auto mb-2 h-7 w-7" /> {msg || 'Pembayaran belum selesai.'}</div><Button variant="outline" className="w-full" onClick={onCreate}>Buat Ulang QRIS</Button></div>;
   }
   if (phase === 'paid') {
-    return <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-700"><CheckCircle2 className="mx-auto mb-2 h-8 w-8" /> Pembayaran berhasil</div>;
+    return <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center text-sm font-bold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"><CheckCircle2 className="mx-auto mb-2 h-8 w-8" /> Pembayaran berhasil</div>;
   }
   return (
     <div className="space-y-3">

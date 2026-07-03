@@ -178,7 +178,7 @@ function PlanModal({ merchant, onClose, onSaved }: { merchant: Merchant | null; 
           </div>
         )}
         <Input label="Catatan (alasan)" value={note} onChange={(e) => setNote(e.target.value)} placeholder="mis. aktivasi manual / promo" />
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+        <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
           {plan === 'BUSINESS'
             ? 'BUSINESS = semua fitur PRO + payment gateway QRIS dinamis Midtrans. Aktif sampai tanggal expired.'
             : plan === 'PRO'

@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { laporanService, getErrorMessage } from '@/services';
 import type { Penjualan } from '@/types';
 import { formatRupiah, formatDate, todayISO } from '@/utils/format';
+import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
 export default function KasirDashboard() {
@@ -34,14 +35,14 @@ export default function KasirDashboard() {
   useEffect(() => { load(); }, [load]);
 
   const columns: Column<Penjualan>[] = [
-    { header: 'Nota', accessor: (r) => <span className="font-mono">#{String(r.ID).padStart(6, '0')}</span> },
+    { header: 'Nota', accessor: (r) => <span className="font-mono">{nomorNotaPenjualanLabel(r)}</span> },
     { header: 'Waktu', accessor: (r) => r.JAM },
     { header: 'Total', accessor: (r) => <span className="font-semibold">{formatRupiah(r.TOTAL)}</span> },
   ];
 
   return (
     <div>
-      <PageHeader title={`Halo, ${user?.nama ?? 'Kasir'}`} description={`Ringkasan kasir Zona Kasir hari ini (${formatDate(todayISO())})`}
+      <PageHeader title={`Halo, ${user?.nama ?? 'Kasir'}`} description={`Ringkasan Kasir Hari Ini (${formatDate(todayISO())})`}
         action={<Link href="/kasir/pos"><Button><ShoppingCart className="h-4 w-4" /> Mulai Transaksi</Button></Link>} />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Penjualan hari ini" value={formatRupiah(total)} icon={Wallet} tone="green" />

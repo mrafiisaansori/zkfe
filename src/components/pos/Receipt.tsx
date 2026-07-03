@@ -1,6 +1,7 @@
 'use client';
 import { forwardRef } from 'react';
 import { formatRupiah, formatDateTime } from '@/utils/format';
+import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import type { Penjualan, PlanType } from '@/types';
 
 export type ReceiptSize = '58' | '80';
@@ -33,15 +34,18 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
     const subtotal = items.reduce((s, d) => s + d.HARGA_JUAL * d.QTY, 0);
     const diskonItem = items.reduce((s, d) => s + (Number(d.DISKON) || 0), 0);
 
+    // bg-[#fff] (bukan bg-white): retrofit dark mode global mengecat ulang token
+    // "bg-white" jadi navy gelap — struk harus SELALU putih seperti kertas asli,
+    // supaya teks hitam di atasnya tetap terbaca.
     return (
-      <div ref={ref} className={`receipt-print mx-auto ${widthPx[size]} bg-white p-3 font-mono text-[11px] leading-tight text-black`}>
+      <div ref={ref} className={`receipt-print mx-auto ${widthPx[size]} bg-[#fff] p-3 font-mono text-[11px] leading-tight text-black`}>
         <div className="text-center">
           <p className="text-sm font-bold uppercase">{displayNamaToko}</p>
           {alamatToko && <p className="text-[10px]">{alamatToko}</p>}
         </div>
         <div className="my-1.5 border-t border-dashed border-black" />
         <div className="space-y-0.5">
-          <div className="flex justify-between"><span>No</span><span>#{String(trx.ID).padStart(6, '0')}</span></div>
+          <div className="flex justify-between"><span>No</span><span>{nomorNotaPenjualanLabel(trx)}</span></div>
           <div className="flex justify-between"><span>Tanggal</span><span>{formatDateTime(`${trx.TANGGAL}T${trx.JAM || '00:00:00'}`)}</span></div>
           <div className="flex justify-between"><span>Kasir</span><span>{trx.kasir?.NAMA ?? '-'}</span></div>
         </div>

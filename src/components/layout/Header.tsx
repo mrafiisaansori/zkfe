@@ -1,24 +1,40 @@
 'use client';
-import { LogOut, Loader2 } from 'lucide-react';
+import { LogOut, Loader2, Sun, Moon, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useThemeStore } from '@/stores/themeStore';
+import { useUIStore } from '@/stores/uiStore';
 import { BrandLogo } from './BrandLogo';
 import { MobileMenu } from './MobileMenu';
 import { AccountMenu } from './AccountMenu';
 
-export function Header({ title }: { title?: string }) {
+export function Header() {
   const { user, signOut, signingOut } = useAuth();
   const isKasir = user?.role === 'kasir';
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  const themeToggleable = user?.role === 'admin' || user?.role === 'kasir' || user?.role === 'superadmin';
+  const isDark = themeToggleable && theme === 'dark';
+  const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+  const toggleSidebar = useUIStore((s) => s.toggleSidebar);
   return (
     <header className={isKasir
-      ? 'sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-brand-100 bg-[#eef6fb]/90 px-3 backdrop-blur-md sm:px-6'
+      ? 'sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-brand-100 bg-[#eef6fb]/90 px-3 backdrop-blur-md dark:bg-slate-900/90 sm:px-6'
       : 'sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-line/70 bg-white/75 px-3 backdrop-blur-md sm:px-6'}
     >
       <div className="flex min-w-0 items-center gap-2.5">
         <MobileMenu />
         <div className="lg:hidden">
-          <BrandLogo size="sm" />
+          <BrandLogo size="sm" tone={isDark ? 'dark' : 'light'} />
         </div>
-        <h1 className={isKasir ? 'hidden truncate text-lg font-bold tracking-tight text-ink lg:block' : 'hidden truncate text-lg font-semibold tracking-tight text-ink lg:block'}>{title}</h1>
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={sidebarOpen ? 'Sembunyikan menu' : 'Tampilkan menu'}
+          title={sidebarOpen ? 'Sembunyikan menu' : 'Tampilkan menu'}
+          className="hidden h-9 w-9 items-center justify-center rounded-xl border border-line bg-white text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 lg:inline-flex"
+        >
+          {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+        </button>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
@@ -31,6 +47,17 @@ export function Header({ title }: { title?: string }) {
           </span>
           <span className="text-sm font-medium text-slate-700">{user?.nama}</span>
         </div>
+        {themeToggleable && (
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={isDark ? 'Mode terang' : 'Mode gelap'}
+            aria-label={isDark ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-line bg-white text-slate-600 transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+          >
+            {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        )}
         <AccountMenu />
         <button
           onClick={signOut}

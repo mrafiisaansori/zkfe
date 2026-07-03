@@ -18,10 +18,10 @@ export function ProductGrid({ produk, loading, onAdd }: Props) {
       {produk.map((p) => {
         const habis = p.STOK <= 0;
         const stockTone = habis
-          ? 'bg-rose-50 text-rose-600'
+          ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300'
           : p.STOK <= 10
-            ? 'bg-amber-50 text-amber-700'
-            : 'bg-brand-50 text-brand-700';
+            ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+            : 'bg-brand-50 text-brand-700 dark:bg-accent/15 dark:text-accent';
 
         return (
           <button
@@ -53,7 +53,7 @@ export function ProductGrid({ produk, loading, onAdd }: Props) {
                 Stok {p.STOK}
               </span>
               <div className="mt-2 flex items-end justify-between gap-2">
-                <span className="text-sm font-bold leading-tight text-slate-950 sm:text-base">{formatRupiah(p.HARGA_JUAL)}</span>
+                <span className="text-sm font-bold leading-tight text-slate-900 sm:text-base">{formatRupiah(p.HARGA_JUAL)}</span>
                 {!habis && (
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/20 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
                     <Plus className="h-4 w-4" />

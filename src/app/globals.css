@@ -135,3 +135,78 @@ input[type=number] { -moz-appearance: textfield; }
   #print-area, #print-area * { visibility: visible; }
   #print-area { position: absolute; left: 0; top: 0; }
 }
+
+/* =====================================================================
+   Mode gelap (Admin & Kasir).
+   ponytail: retrofit lewat override class Tailwind yang SUDAH dipakai di
+   seluruh app (bg-white, text-slate-*, border-line, dst) alih-alih menambah
+   varian `dark:` di ~100 file satu per satu. Selector `[class~="..."]`
+   mencocokkan token class persis (jadi tidak menimpa varian hover:/focus:).
+   Upgrade path bila butuh presisi penuh: migrasi bertahap ke `dark:` per
+   komponen, dimulai dari komponen ui/ yang paling sering dipakai.
+   ========================================================================= */
+.dark { color-scheme: dark; }
+.dark body { @apply bg-slate-900 text-slate-300; }
+.dark ::selection { @apply bg-brand-900 text-brand-100; }
+.dark *::-webkit-scrollbar-thumb { background-color: #475569; }
+.dark *::-webkit-scrollbar-thumb:hover { background-color: #64748b; }
+.dark * { scrollbar-color: #475569 transparent; }
+
+/* Permukaan (card/table/modal/input) */
+.dark [class~="bg-white"],
+.dark [class~="bg-white/95"],
+.dark [class~="bg-white/90"],
+.dark [class~="bg-white/85"],
+.dark [class~="bg-white/80"],
+.dark [class~="bg-white/75"],
+.dark [class~="bg-white/70"],
+.dark [class~="bg-white/60"],
+.dark [class~="bg-slate-50"],
+.dark [class~="bg-slate-50/70"] { background-color: #1e293b; }
+.dark [class~="bg-slate-100"],
+.dark [class~="bg-canvas"],
+.dark [class~="hover:bg-canvas"]:hover,
+.dark [class~="hover:bg-slate-50"]:hover,
+.dark [class~="hover:bg-slate-100"]:hover,
+.dark [class~="hover:bg-white"]:hover,
+.dark [class~="hover:bg-white/10"]:hover { background-color: #29374a; }
+.dark [class~="bg-background"] { background-color: #0f172a; }
+
+/* Garis & border */
+.dark [class~="border-line"],
+.dark [class~="border-line/80"],
+.dark [class~="border-line/70"],
+.dark [class~="border-slate-100"],
+.dark [class~="border-slate-200"] { border-color: #334155; }
+.dark [class~="border-slate-300"] { border-color: #475569; }
+.dark [class~="ring-line"] { --tw-ring-color: #334155; }
+.dark [class~="divide-line"] > :not([hidden]) ~ :not([hidden]),
+.dark [class~="divide-slate-100"] > :not([hidden]) ~ :not([hidden]) { border-color: #334155; }
+
+/* Teks */
+.dark [class~="text-ink"],
+.dark [class~="text-slate-900"],
+.dark [class~="text-slate-800"],
+.dark [class~="hover:text-slate-900"]:hover { color: #f1f5f9; }
+.dark [class~="text-slate-700"],
+.dark [class~="hover:text-slate-700"]:hover { color: #cbd5e1; }
+.dark [class~="text-slate-600"],
+.dark [class~="text-muted"],
+.dark [class~="text-slate-500"],
+.dark [class~="hover:text-slate-600"]:hover { color: #94a3b8; }
+.dark [class~="text-slate-400"] { color: #64748b; }
+
+/* Panel bertinta brand (info box, tab aktif, badge biru) */
+.dark [class~="bg-brand-50"],
+.dark [class~="bg-brand-50/60"],
+.dark [class~="bg-brand-50/50"],
+.dark [class~="bg-brand-100"] { background-color: #0a2540; }
+.dark [class~="border-brand-100"] { border-color: #0a6cb0; }
+
+/* Badge status pastel (Badge.tsx: hijau/merah/kuning) */
+.dark [class~="bg-emerald-50"] { background-color: rgba(16, 185, 129, 0.16); }
+.dark [class~="bg-rose-50"] { background-color: rgba(244, 63, 94, 0.16); }
+.dark [class~="bg-amber-50"] { background-color: rgba(245, 158, 11, 0.18); }
+.dark [class~="ring-emerald-200"] { --tw-ring-color: rgba(16, 185, 129, 0.35); }
+.dark [class~="ring-rose-200"] { --tw-ring-color: rgba(244, 63, 94, 0.35); }
+.dark [class~="ring-amber-200"] { --tw-ring-color: rgba(245, 158, 11, 0.35); }

@@ -32,7 +32,7 @@ export function MobileNavbar() {
             className={cn(
               'flex flex-1 flex-col items-center gap-1 rounded-xl py-2 text-[11px] font-medium transition-all duration-200',
               active
-                ? isKasir ? 'bg-brand-50 text-primary shadow-card' : 'bg-gradient-to-b from-brand-50 to-white text-brand-700 shadow-card'
+                ? isKasir ? 'bg-brand-50 text-primary shadow-card dark:bg-accent/15 dark:text-accent' : 'bg-gradient-to-b from-brand-50 to-white text-brand-700 shadow-card dark:from-accent/20 dark:to-accent/5 dark:text-accent'
                 : 'text-slate-500 hover:bg-slate-50',
             )}
           >

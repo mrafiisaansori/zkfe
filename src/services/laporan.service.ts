@@ -19,8 +19,9 @@ export const laporanService = {
     page = 1,
     limit = 25,
     id_jenis_bayar?: number,
+    id_shift?: number,
   ): Promise<ApiDataWithMeta<LaporanPenjualan, PaginationMeta>> =>
-    getWithMeta<LaporanPenjualan>('/laporan/penjualan', { tanggal_awal, tanggal_akhir, id_user, status, page, limit, id_jenis_bayar }),
+    getWithMeta<LaporanPenjualan>('/laporan/penjualan', { tanggal_awal, tanggal_akhir, id_user, status, page, limit, id_jenis_bayar, id_shift }),
   pendapatan: (tanggal_awal: string, tanggal_akhir: string, status: 0 | 1 = 1) =>
     get<LaporanPendapatan>('/laporan/pendapatan', { tanggal_awal, tanggal_akhir, status }),
   stok: () => get<{ jumlah_produk: number; nilai_stok: number; data: Produk[] }>('/laporan/stok'),

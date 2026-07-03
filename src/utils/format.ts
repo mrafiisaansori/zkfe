@@ -11,14 +11,17 @@ export function formatDate(value?: string | null): string {
   if (!value) return '-';
   const d = new Date(value);
   if (isNaN(d.getTime())) return value;
-  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' });
 }
 
 export function formatDateTime(value?: string | null): string {
   if (!value) return '-';
   const d = new Date(value);
   if (isNaN(d.getTime())) return value;
-  return d.toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  // toLocaleTimeString('id-ID') pakai titik (16.07); paksa titik dua agar konsisten.
+  const jam = String(d.getHours()).padStart(2, '0');
+  const menit = String(d.getMinutes()).padStart(2, '0');
+  return `${formatDate(value)} pukul ${jam}:${menit}`;
 }
 
 // Zona waktu aplikasi (WIB / Asia/Jakarta).

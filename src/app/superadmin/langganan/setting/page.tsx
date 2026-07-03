@@ -8,6 +8,8 @@ import { usePageLoading } from '@/hooks/usePageLoading';
 
 const initialForm = {
   price_monthly: 0,
+  price_3_months: 0,
+  price_6_months: 0,
   price_yearly: 0,
   price_business_monthly: 0,
   price_business_yearly: 0,
@@ -30,6 +32,8 @@ export default function HargaLanggananSettingPage() {
       const data = await subscriptionService.getSetting();
       setForm({
         price_monthly: data.PRICE_MONTHLY || 0,
+        price_3_months: data.PRICE_3_MONTHS || 0,
+        price_6_months: data.PRICE_6_MONTHS || 0,
         price_yearly: data.PRICE_YEARLY || 0,
         price_business_monthly: data.PRICE_BUSINESS_MONTHLY || 0,
         price_business_yearly: data.PRICE_BUSINESS_YEARLY || 0,
@@ -74,8 +78,10 @@ export default function HargaLanggananSettingPage() {
       <Card><CardBody>
         <div className="max-w-2xl space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="Harga PRO Bulanan (Rp)" type="number" min={0} value={form.price_monthly || ''} onChange={(event) => setForm((current) => ({ ...current, price_monthly: Number(event.target.value) }))} />
-            <Input label="Harga PRO Tahunan (Rp)" type="number" min={0} value={form.price_yearly || ''} onChange={(event) => setForm((current) => ({ ...current, price_yearly: Number(event.target.value) }))} />
+            <Input label="Harga PRO 1 Bulan (Rp)" type="number" min={0} value={form.price_monthly || ''} onChange={(event) => setForm((current) => ({ ...current, price_monthly: Number(event.target.value) }))} />
+            <Input label="Harga PRO 3 Bulan (Rp)" type="number" min={0} value={form.price_3_months || ''} onChange={(event) => setForm((current) => ({ ...current, price_3_months: Number(event.target.value) }))} />
+            <Input label="Harga PRO 6 Bulan (Rp)" type="number" min={0} value={form.price_6_months || ''} onChange={(event) => setForm((current) => ({ ...current, price_6_months: Number(event.target.value) }))} />
+            <Input label="Harga PRO 1 Tahun (Rp)" type="number" min={0} value={form.price_yearly || ''} onChange={(event) => setForm((current) => ({ ...current, price_yearly: Number(event.target.value) }))} />
             <Input label="Harga BUSINESS Bulanan (Rp)" type="number" min={0} value={form.price_business_monthly || ''} onChange={(event) => setForm((current) => ({ ...current, price_business_monthly: Number(event.target.value) }))} />
             <Input label="Harga BUSINESS Tahunan (Rp)" type="number" min={0} value={form.price_business_yearly || ''} onChange={(event) => setForm((current) => ({ ...current, price_business_yearly: Number(event.target.value) }))} />
           </div>

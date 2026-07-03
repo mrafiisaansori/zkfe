@@ -8,6 +8,10 @@ interface UIState {
   // Mencegah klik logout berkali-kali & menampilkan overlay loading.
   signingOut: boolean;
   setSigningOut: (v: boolean) => void;
+  // Collapse/expand sidebar desktop. Dikontrol dari Header (tombol menggantikan
+  // label "Admin Panel"/"Kasir") sekaligus dibaca oleh Sidebar.
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
 }
 
 // Store ringan untuk status loading global (overlay saat pindah menu).
@@ -16,4 +20,6 @@ export const useUIStore = create<UIState>((set) => ({
   setNavLoading: (v) => set({ navLoading: v }),
   signingOut: false,
   setSigningOut: (v) => set({ signingOut: v }),
+  sidebarOpen: true,
+  toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 }));

@@ -9,7 +9,8 @@ import { Card, CardBody, LoadingState, ErrorState, Badge, Skeleton, StatCardSkel
 import { dashboardService, getErrorMessage } from '@/services';
 import { useAuthStore } from '@/stores/authStore';
 import type { DashboardSummary } from '@/types';
-import { formatRupiah } from '@/utils/format';
+import { formatRupiah, formatDate } from '@/utils/format';
+import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { GudangDashboard } from './GudangDashboard';
 
@@ -63,7 +64,7 @@ function FinanceDashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" description={`Ringkasan operasional toko · ${summary.tanggal}`} />
+      <PageHeader title="Dashboard" description={`Ringkasan operasional toko · ${formatDate(summary.tanggal)}`} />
       <UpgradeBanner />
       {/* Headline: omzet bersih, transaksi, laba kotor, stok menipis */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -155,8 +156,8 @@ function FinanceDashboard() {
               {summary.transaksi_terbaru!.map((t) => (
                 <li key={t.ID} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
                   <span className="min-w-0">
-                    <span className="block font-mono text-xs text-slate-400">#{String(t.ID).padStart(6, '0')}</span>
-                    <span className="block truncate text-sm text-slate-600">{t.kasir?.NAMA ?? '-'} · {t.TANGGAL}</span>
+                    <span className="block font-mono text-xs text-slate-400">{nomorNotaPenjualanLabel(t)}</span>
+                    <span className="block truncate text-sm text-slate-600">{t.kasir?.NAMA ?? '-'} · {formatDate(t.TANGGAL)}, {t.JAM?.slice(0, 5)}</span>
                   </span>
                   <span className="shrink-0 text-sm font-bold text-slate-800">{formatRupiah(t.TOTAL)}</span>
                 </li>

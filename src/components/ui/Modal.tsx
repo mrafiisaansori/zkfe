@@ -29,7 +29,7 @@ export function Modal({ open, onClose, title, children, footer, size = 'md' }: P
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 animate-fade-in sm:items-center sm:p-4"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-sm animate-fade-in dark:bg-slate-950/70 dark:backdrop-blur-md sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div

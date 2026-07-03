@@ -52,13 +52,13 @@ export function UpgradeModal({
 
         {showUpgradeButton ? (
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button variant="outline" className="flex-1" onClick={onClose}>Nanti saja</Button>
+            <Button variant="outline" size="lg" className="flex-1" onClick={onClose}>Nanti saja</Button>
             <Link
               href={upgradeHref}
               onClick={onClose}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-700"
+              className="inline-flex h-11 flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-lg bg-primary px-5 text-[15px] font-bold text-white shadow-card transition-all duration-150 hover:bg-brand-700 active:translate-y-px active:bg-brand-800"
             >
-              Upgrade ke PRO <ArrowRight className="h-4 w-4" />
+              Upgrade ke PRO <ArrowRight className="h-4 w-4 shrink-0" />
             </Link>
           </div>
         ) : (

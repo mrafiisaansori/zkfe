@@ -40,7 +40,7 @@ export function GudangDashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard Gudang" description={`Ringkasan stok & operasional · ${data.tanggal}`} />
+      <PageHeader title="Dashboard Gudang" description={`Ringkasan stok & operasional · ${formatDate(data.tanggal)}`} />
 
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard label="Total produk" value={data.total_produk} icon={Package} tone="brand" />

@@ -1,16 +1,30 @@
 'use client';
 import { useState } from 'react';
-import { FileDown, Search, TrendingUp, Wallet, Receipt } from 'lucide-react';
+import { FileSpreadsheet, FileText, Search, TrendingUp, Wallet, Receipt } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/layout/StatCard';
-import { Card, CardBody, Button, FilterDate, DataTable, LoadingState, Pagination, type Column } from '@/components/ui';
+import { Card, CardBody, Button, FilterDate, DataTable, LoadingState, Pagination, UpgradeModal, type Column } from '@/components/ui';
 import { laporanService, getErrorMessage } from '@/services';
 import { useAuthStore } from '@/stores/authStore';
 import type { LaporanPenjualan, LaporanPendapatan, Penjualan, RekapLaporan, PlanType } from '@/types';
 import type { PaginationMeta } from '@/services/api';
 import { formatRupiah, formatDate, todayISO } from '@/utils/format';
+import { exportFinancialReportExcel, exportFinancialReportPdf } from '@/utils/financialReportExport';
+import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
+
+const PDF_LOADING_HTML = `<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Menyiapkan laporan...</title>
+</head>
+<body style="font-family: Arial, sans-serif; padding: 32px; color: #0f172a;">
+  <h1 style="font-size: 20px; margin: 0 0 8px;">Menyiapkan laporan PDF</h1>
+  <p style="margin: 0; color: #64748b;">Mohon tunggu, data laporan sedang dimuat.</p>
+</body>
+</html>`;
 
 export default function LaporanPage() {
   const user = useAuthStore((s) => s.user);
@@ -25,7 +39,8 @@ export default function LaporanPage() {
   const [rekap, setRekap] = useState<RekapLaporan | null>(null);
   const [page, setPage] = useState(1);
   const [meta, setMeta] = useState<PaginationMeta | undefined>();
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<'excel' | 'pdf' | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   async function run(pageNo = page) {
     setLoading(true);
@@ -37,35 +52,93 @@ export default function LaporanPage() {
       setPenjualan(pj.data); setMeta(pj.meta); setPendapatan(pd);
       // Rekap lengkap hanya untuk PRO/BUSINESS (FREE -> backend 403, diabaikan).
       if (isPro) {
-        try { setRekap(await laporanService.rekap({ tanggal_awal: awal, tanggal_akhir: akhir, status: 1 })); }
+        try { setRekap(await laporanService.rekap({ tanggal_awal: awal, tanggal_akhir: akhir, status: 1, top_limit: 20 })); }
         catch { setRekap(null); }
       } else { setRekap(null); }
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
   }
 
-  async function exportRekap() {
-    setExporting(true);
-    try { await laporanService.exportRekapCsv({ tanggal_awal: awal, tanggal_akhir: akhir, status: 1 }); }
-    catch (err) { toast.error(getErrorMessage(err)); }
-    finally { setExporting(false); }
+  async function loadExportData() {
+    const [fullPenjualan, fullPendapatan] = await Promise.all([
+      laporanService.penjualan(awal, akhir, 'all', 1),
+      laporanService.pendapatan(awal, akhir, 1),
+    ]);
+    let fullRekap: RekapLaporan | null = rekap;
+    if (isPro) {
+      try {
+        fullRekap = await laporanService.rekap({ tanggal_awal: awal, tanggal_akhir: akhir, status: 1, top_limit: 20 });
+      } catch {
+        fullRekap = null;
+      }
+    }
+    return { fullPenjualan, fullPendapatan, fullRekap };
   }
 
-  function exportCsv() {
-    if (!penjualan?.data?.length) { toast.error('Tidak ada data untuk diexport'); return; }
-    const rows = [['Nota', 'Tanggal', 'Kasir', 'Metode', 'Total']];
-    penjualan.data.forEach((t) => rows.push([
-      String(t.ID).padStart(6, '0'), t.TANGGAL, t.kasir?.NAMA ?? '-', t.jenisBayar?.NAMA ?? '-', String(t.TOTAL),
-    ]));
-    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(',')).join('\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    const a = document.createElement('a');
-    a.href = url; a.download = `laporan-penjualan-${awal}_${akhir}-halaman-${page}.csv`; a.click();
-    URL.revokeObjectURL(url);
+  async function handleExportExcel() {
+    if (!isPro) {
+      setUpgradeOpen(true);
+      return;
+    }
+    setExporting('excel');
+    try {
+      const { fullPenjualan, fullPendapatan, fullRekap } = await loadExportData();
+      exportFinancialReportExcel({
+        merchantName: user?.merchant?.nama,
+        generatedBy: user?.nama,
+        plan,
+        tanggalAwal: awal,
+        tanggalAkhir: akhir,
+        penjualan: fullPenjualan,
+        pendapatan: fullPendapatan,
+        rekap: fullRekap,
+      });
+      toast.success('Laporan Excel berhasil dibuat');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function handleExportPdf() {
+    if (!isPro) {
+      setUpgradeOpen(true);
+      return;
+    }
+    setExporting('pdf');
+    const pdfWindow = window.open('', '_blank', 'width=1120,height=800');
+    if (!pdfWindow) {
+      toast.error('Popup diblokir browser. Izinkan popup untuk mengunduh PDF laporan.');
+      setExporting(null);
+      return;
+    }
+    pdfWindow.document.open();
+    pdfWindow.document.write(PDF_LOADING_HTML);
+    pdfWindow.document.close();
+    try {
+      const { fullPenjualan, fullPendapatan, fullRekap } = await loadExportData();
+      exportFinancialReportPdf({
+        merchantName: user?.merchant?.nama,
+        generatedBy: user?.nama,
+        plan,
+        tanggalAwal: awal,
+        tanggalAkhir: akhir,
+        penjualan: fullPenjualan,
+        pendapatan: fullPendapatan,
+        rekap: fullRekap,
+      }, pdfWindow);
+      toast.success('Tampilan PDF dibuka. Pilih Save as PDF di dialog cetak.');
+    } catch (err) {
+      pdfWindow.close();
+      toast.error(getErrorMessage(err));
+    } finally {
+      setExporting(null);
+    }
   }
 
   const columns: Column<Penjualan>[] = [
-    { header: 'Nota', accessor: (r) => <span className="font-mono">#{String(r.ID).padStart(6, '0')}</span> },
+    { header: 'Nota', accessor: (r) => <span className="font-mono">{nomorNotaPenjualanLabel(r)}</span> },
     { header: 'Tanggal', accessor: (r) => formatDate(r.TANGGAL) },
     { header: 'Kasir', accessor: (r) => r.kasir?.NAMA ?? '-' },
     { header: 'Metode', accessor: (r) => r.jenisBayar?.NAMA ?? '-' },
@@ -76,16 +149,26 @@ export default function LaporanPage() {
     <div>
       <PageHeader title="Laporan Penjualan" description="Rekap omzet, transaksi, dan laba per periode" />
       <Card className="mb-4"><CardBody>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <FilterDate
             awal={awal}
             akhir={akhir}
             onAwal={(v) => { setAwal(v); setPage(1); }}
             onAkhir={(v) => { setAkhir(v); setPage(1); }}
           />
-          <Button onClick={() => { setPage(1); run(1); }} loading={loading}><Search className="h-4 w-4" /> Tampilkan</Button>
-          {penjualan && <Button variant="outline" onClick={exportCsv}><FileDown className="h-4 w-4" /> Export CSV</Button>}
-          {isPro && rekap && <Button variant="outline" onClick={exportRekap} loading={exporting}><FileDown className="h-4 w-4" /> Export Rekap Lengkap</Button>}
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => { setPage(1); run(1); }} loading={loading}><Search className="h-4 w-4" /> Tampilkan</Button>
+            {penjualan && pendapatan && (
+              <>
+                <Button variant="outline" onClick={handleExportExcel} loading={exporting === 'excel'}>
+                  <FileSpreadsheet className="h-4 w-4" /> Export Excel
+                </Button>
+                <Button variant="outline" onClick={handleExportPdf} loading={exporting === 'pdf'}>
+                  <FileText className="h-4 w-4" /> Export PDF
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         {!isPro && (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
@@ -177,6 +260,14 @@ export default function LaporanPage() {
           )}
         </>
       )}
+
+      <UpgradeModal
+        open={upgradeOpen}
+        onClose={() => setUpgradeOpen(false)}
+        title="Export laporan tersedia di PRO"
+        description="Paket FREE tetap bisa melihat laporan penjualan di layar. Download laporan Excel dan PDF hanya tersedia untuk paket PRO atau BUSINESS."
+        benefits={['Download laporan Excel (.xlsx)', 'Download laporan PDF siap cetak', 'Rekap laporan lengkap untuk analisis bisnis']}
+      />
     </div>
   );
 }

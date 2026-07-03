@@ -14,6 +14,7 @@ import {
 import { merchantService, getErrorMessage } from '@/services';
 import type { Merchant, Produk, Pengguna, Penjualan, LaporanPendapatan } from '@/types';
 import { formatRupiah, formatDate, todayISO } from '@/utils/format';
+import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { cn } from '@/utils/cn';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
@@ -180,7 +181,7 @@ function PenjualanTab({ id }: { id: number }) {
   useEffect(() => { load(); }, [load]);
   const total = data.reduce((s, r) => s + (Number(r.TOTAL) || 0), 0);
   const columns: Column<Penjualan>[] = [
-    { header: 'Nota', accessor: (r) => <span className="font-mono">#{String(r.ID).padStart(6, '0')}</span> },
+    { header: 'Nota', accessor: (r) => <span className="font-mono">{nomorNotaPenjualanLabel(r)}</span> },
     { header: 'Tanggal', accessor: (r) => formatDate(r.TANGGAL) },
     { header: 'Kasir', accessor: (r) => r.kasir?.NAMA ?? '-' },
     { header: 'Metode', accessor: (r) => <Badge tone="blue">{r.jenisBayar?.NAMA ?? '-'}</Badge> },
@@ -197,9 +198,9 @@ function PenjualanTab({ id }: { id: number }) {
       <Card><CardBody>
         <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Tidak ada transaksi" />
         {!loading && data.length > 0 && (
-          <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 text-sm">
+          <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-4 py-3 text-sm dark:bg-emerald-500/15">
             <span className="text-slate-600">{data.length} transaksi</span>
-            <span className="font-semibold text-emerald-700">Total: {formatRupiah(total)}</span>
+            <span className="font-semibold text-emerald-700 dark:text-emerald-300">Total: {formatRupiah(total)}</span>
           </div>
         )}
       </CardBody></Card>

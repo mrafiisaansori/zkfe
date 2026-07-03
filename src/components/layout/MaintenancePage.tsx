@@ -32,7 +32,7 @@ export function MaintenancePage({ message }: { message?: string }) {
             <span className="absolute inset-0 animate-ping rounded-2xl bg-brand-100/40" aria-hidden="true" />
           </span>
 
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Sedang dalam pemeliharaan
           </span>
 

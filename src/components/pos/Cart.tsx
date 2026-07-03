@@ -24,14 +24,14 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
             <ShoppingCart className="h-4 w-4" />
           </span>
           <div>
-            <h3 className="text-sm font-bold text-slate-950">{billMode ? 'Edit Bill' : 'Keranjang'}</h3>
+            <h3 className="text-sm font-bold text-slate-900">{billMode ? 'Edit Bill' : 'Keranjang'}</h3>
             <p className="text-xs text-slate-500">
               {billMode && bill?.no_bill ? bill.no_bill : `${items.length} item dipilih`}
             </p>
           </div>
         </div>
         {items.length > 0 && (
-          <button onClick={clear} className="rounded-full px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50">
+          <button onClick={clear} className="rounded-full px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-500/15">
             Kosongkan
           </button>
         )}
@@ -58,7 +58,7 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
                       <button
                         onClick={() => removeItem(it.lineId)}
                         aria-label="Hapus"
-                        className="-mr-1 -mt-1 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600"
+                        className="-mr-1 -mt-1 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -86,7 +86,7 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
                           <Plus className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      <span className="whitespace-nowrap text-sm font-bold text-slate-950">{formatRupiah(unit * it.qty)}</span>
+                      <span className="whitespace-nowrap text-sm font-bold text-slate-900">{formatRupiah(unit * it.qty)}</span>
                     </div>
                   </div>
                 </div>
@@ -111,7 +111,7 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
           )}
         </div>
 
-        <details className="mb-3 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50/70 p-2.5" open={diskon > 0}>
+        <details className="mb-3 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50/70 p-2.5 dark:border-accent/30 dark:bg-accent/10" open={diskon > 0}>
           <summary className="flex cursor-pointer list-none items-center justify-between">
             <span className="flex items-center gap-1.5 text-sm font-bold text-slate-700">
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-primary">
@@ -122,7 +122,7 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
             {diskon > 0 && (
               <button
                 onClick={(e) => { e.preventDefault(); setDiskon(0); }}
-                className="rounded-full px-2 py-1 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-50"
+                className="rounded-full px-2 py-1 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-500/15"
               >
                 Hapus
               </button>
@@ -164,7 +164,7 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
 
         <div className="mb-3 flex items-center justify-between border-t border-slate-100 pt-3">
           <span className="text-sm font-bold text-slate-600">Total</span>
-          <span className="text-2xl font-black tracking-tight text-slate-950">{formatRupiah(total())}</span>
+          <span className="text-2xl font-black tracking-tight text-slate-900">{formatRupiah(total())}</span>
         </div>
         {billMode ? (
           <div className="space-y-2">
@@ -198,7 +198,7 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
               </Button>
               <Button
                 variant="outline"
-                className="h-11 rounded-2xl border-rose-200 text-sm font-bold text-rose-600 hover:bg-rose-50"
+                className="h-11 rounded-2xl border-rose-200 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/15"
                 onClick={onCancelBill}
               >
                 <Trash2 className="h-4 w-4" /> Batalkan

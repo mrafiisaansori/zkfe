@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { produkService, jenisBayarService, kategoriService, penjualanService, paymentService, openBillService, qrisService, taxService, identitasService, modifierService, kasShiftService, getErrorMessage } from '@/services';
 import { cn } from '@/utils/cn';
 import { formatRupiah } from '@/utils/format';
+import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { printThermal } from '@/utils/printThermal';
 import type { Produk, JenisBayar, Kategori, Penjualan, CheckoutResult, Qris, TaxSetting, Identitas, ModifierGroup, ModifierOption, PlanType, MidtransQrisResult } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
@@ -329,7 +330,7 @@ export default function PosPage() {
     const trx = await penjualanService.getById(transactionId);
     const result = {
       id: transactionId,
-      no_nota: String(transactionId),
+      no_nota: trx.NO_NOTA || String(transactionId),
       subtotal: Number(trx.TOTAL) || 0,
       diskon: 0,
       total: Number(trx.TOTAL) || 0,
@@ -383,7 +384,7 @@ export default function PosPage() {
       const trx = await penjualanService.getById(transactionId);
       const result = {
         id: transactionId,
-        no_nota: midtransRes?.no_nota || String(transactionId),
+        no_nota: midtransRes?.no_nota || trx.NO_NOTA || String(transactionId),
         subtotal: cart.total(),
         diskon: cart.diskon,
         total: midtransRes?.gross_amount ?? (Number(trx.TOTAL) || 0),
@@ -486,14 +487,14 @@ export default function PosPage() {
             <div className="flex items-center gap-2">
               {/* Status sesi kasir */}
               {shiftActive === true && (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                   <LockOpen className="h-4 w-4" /> Sesi kasir aktif
                 </span>
               )}
               {shiftActive === false && (
                 <button
                   onClick={() => router.push('/kasir/closing')}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 transition-colors hover:bg-amber-100 dark:bg-amber-500/15 dark:text-amber-300 dark:hover:bg-amber-500/25"
                 >
                   <Lock className="h-4 w-4" /> Sesi kasir belum dibuka
                 </button>
@@ -693,7 +694,7 @@ export default function PosPage() {
             <div key={g.ID}>
               <div className="mb-1.5 flex items-center gap-2">
                 <span className="text-sm font-bold text-slate-800">{g.NAMA}</span>
-                {g.WAJIB && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600">Wajib</span>}
+                {g.WAJIB && <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">Wajib</span>}
                 <span className="text-[10px] text-slate-400">{g.TIPE === 'SINGLE' ? 'pilih satu' : 'pilih banyak'}</span>
               </div>
               <div className="space-y-1.5">
@@ -801,11 +802,16 @@ export default function PosPage() {
             <div className="mb-3 flex flex-col items-center gap-2 rounded-2xl bg-emerald-50 p-5 text-center">
               <CheckCircle2 className="h-12 w-12 text-emerald-500" />
               <p className="text-sm text-slate-600">
-                Nota <b className="font-semibold text-slate-800">#{success.result.no_nota}</b> tersimpan.
+                Nota <b className="font-semibold text-slate-800">{nomorNotaPenjualanLabel(success.trx)}</b> tersimpan.
               </p>
               {success.result.kembalian != null && (
                 <p className="text-lg font-semibold text-emerald-600">
                   Kembalian: {formatRupiah(success.result.kembalian)}
+                </p>
+              )}
+              {success.trx.open_bill && (
+                <p className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-emerald-700">
+                  Open Bill {success.trx.open_bill.no_bill} · dibuka oleh {success.trx.open_bill.dibuka_oleh ?? '-'}
                 </p>
               )}
             </div>

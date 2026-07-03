@@ -92,6 +92,8 @@ export type SubscriptionStatus = PaymentStatus | 'WAITING_VERIFICATION' | 'VERIF
 export interface SubscriptionSetting {
   ID?: number;
   PRICE_MONTHLY: number;
+  PRICE_3_MONTHS: number;
+  PRICE_6_MONTHS: number;
   PRICE_YEARLY: number;
   PRICE_BUSINESS_MONTHLY: number;
   PRICE_BUSINESS_YEARLY: number;
@@ -100,9 +102,11 @@ export interface SubscriptionSetting {
   MAINTENANCE_MESSAGE?: string | null;
 }
 
+export type SubscriptionPaket = 'BULANAN' | '3_BULAN' | '6_BULAN' | 'TAHUNAN';
+
 export interface SubscriptionPayment {
   ID: number;
-  PAKET: 'BULANAN' | 'TAHUNAN';
+  PAKET: SubscriptionPaket;
   TARGET_PLAN: PlanType;
   DURATION_MONTHS: number;
   HARGA: number;
@@ -132,6 +136,26 @@ export interface Billing {
   status_toko: string | null;
   payments: SubscriptionPayment[];
   latest: SubscriptionPayment | null;
+}
+
+export interface RevenueByPlan {
+  plan: PlanType;
+  paket: 'BULANAN' | 'TAHUNAN';
+  jumlah: number;
+  total: number;
+}
+
+export interface RevenueSummary {
+  filter: { tanggal_awal?: string; tanggal_akhir?: string };
+  total_revenue: number;
+  jumlah_pembayaran: number;
+  by_plan: RevenueByPlan[];
+  payments: SubscriptionPayment[];
+}
+
+export interface RevenueChart {
+  tahun: number;
+  data: { bulan: number; revenue: number }[];
 }
 
 export interface MerchantStats {
@@ -352,6 +376,8 @@ export interface ModifierGroup {
 
 export interface Penjualan {
   ID: number;
+  NO_NOTA?: string | null;
+  NO_NOTA_URUT?: number | null;
   TANGGAL: string;
   JAM: string;
   ID_JENIS_BAYAR: number;
@@ -368,6 +394,9 @@ export interface Penjualan {
   kasir?: { ID: number; NAMA: string };
   jenisBayar?: { ID: number; NAMA: string };
   detail?: DetailPenjualan[];
+  // Terisi hanya bila transaksi berasal dari Open Bill: siapa yang MEMBUKA bill
+  // (bisa beda dari `kasir` di atas, yang selalu kasir yang MEMBAYAR/menutup).
+  open_bill?: { no_bill: string; dibuka_oleh: string | null } | null;
 }
 
 export interface CheckoutResult {
@@ -422,7 +451,7 @@ export interface DashboardSummary {
   total_pengguna: number;
   stok_menipis: { ID: number; NAMA: string; STOK: number }[];
   produk_terlaris?: { id_produk: number; nama: string; qty: number; omzet: number }[];
-  transaksi_terbaru?: { ID: number; TANGGAL: string; JAM: string; TOTAL: string; kasir?: { ID: number; NAMA: string } }[];
+  transaksi_terbaru?: { ID: number; NO_NOTA?: string | null; NO_NOTA_URUT?: number | null; TANGGAL: string; JAM: string; TOTAL: string; kasir?: { ID: number; NAMA: string } }[];
 }
 
 // Dashboard operasional Gudang (tanpa data keuangan).
@@ -436,7 +465,7 @@ export interface GudangDashboard {
   riwayat_stok: { ID: number; JENIS: number; QTY: number; TANGGAL: string; KETERANGAN: string; produk?: { ID: number; NAMA: string } }[];
   pembelian_terbaru: { ID: number; NO_NOTA: string; TANGGAL: string; STATUS: number; supplier?: { ID: number; NAMA: string } }[];
   retur_terbaru: { ID: number; NO_NOTA: string; TANGGAL: string; STATUS: number; supplier?: { ID: number; NAMA: string } }[];
-  transaksi_terbaru: { ID: number; TANGGAL: string; JAM: string; kasir?: { ID: number; NAMA: string } }[];
+  transaksi_terbaru: { ID: number; NO_NOTA?: string | null; NO_NOTA_URUT?: number | null; TANGGAL: string; JAM: string; kasir?: { ID: number; NAMA: string } }[];
 }
 
 export interface LaporanPenjualan {

@@ -8,16 +8,19 @@ import {
   ChevronLeft,
   ChevronRight,
   CreditCard,
+  Moon,
   PackageCheck,
   QrCode,
   ReceiptText,
   ScanLine,
   ShoppingBag,
   Sparkles,
+  Sun,
   UsersRound,
 } from 'lucide-react';
 import { BrandLoader } from '@/components/ui/BrandLoader';
 import { BrandLogo } from '@/components/layout/BrandLogo';
+import { useThemeStore } from '@/stores/themeStore';
 import { cn } from '@/utils/cn';
 
 type MaxWidth = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
@@ -105,6 +108,15 @@ export function AuthShell({
   const slide = featureSlides[activeSlide];
   const SlideIcon = slide.icon;
 
+  // Halaman auth berada di luar AppLayout, jadi terapkan class .dark sendiri
+  // dari preferensi tersimpan (store yang sama dipakai Header setelah login).
+  const theme = useThemeStore((s) => s.theme);
+  const toggleTheme = useThemeStore((s) => s.toggleTheme);
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+  }, [theme]);
+  const logoTone = theme === 'dark' ? 'dark' : 'light';
+
   useEffect(() => {
     const timer = window.setInterval(() => {
       setActiveSlide((current) => (current + 1) % featureSlides.length);
@@ -119,14 +131,23 @@ export function AuthShell({
 
   return (
     <main className="min-h-[100dvh] overflow-x-hidden bg-canvas lg:h-[100dvh] lg:overflow-hidden">
+      <button
+        type="button"
+        onClick={toggleTheme}
+        aria-label={theme === 'dark' ? 'Ganti ke mode terang' : 'Ganti ke mode gelap'}
+        title={theme === 'dark' ? 'Mode terang' : 'Mode gelap'}
+        className="fixed right-4 top-4 z-50 inline-flex h-10 w-10 items-center justify-center rounded-xl border border-line bg-white/90 text-slate-600 shadow-card backdrop-blur transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+      >
+        {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      </button>
       <section className="grid min-h-[100dvh] w-full bg-white lg:h-[100dvh] lg:grid-cols-[minmax(0,1fr)_minmax(420px,0.78fr)] lg:overflow-hidden xl:grid-cols-[minmax(0,1.05fr)_minmax(460px,0.75fr)]">
-        <aside className="relative hidden h-screen overflow-hidden bg-[#eef6fb] p-6 lg:flex lg:flex-col xl:p-8">
+        <aside className="relative hidden h-screen overflow-hidden bg-[#eef6fb] p-6 dark:bg-slate-950 lg:flex lg:flex-col xl:p-8">
           <span aria-hidden className="zk-pattern-diagonal pointer-events-none absolute inset-0 opacity-70" />
           <span aria-hidden className="pointer-events-none absolute -left-32 top-24 h-80 w-80 rounded-full bg-white/70" />
           <span aria-hidden className="pointer-events-none absolute -right-28 bottom-16 h-72 w-72 rounded-full bg-brand-100/80" />
 
           <div className="relative z-10 flex items-center justify-between">
-            <BrandLogo size="lg" />
+            <BrandLogo size="lg" tone={logoTone} />
             <span className="inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white/80 px-3 py-1.5 text-xs font-semibold text-primary shadow-card">
               <CheckCircle2 className="h-3.5 w-3.5" />
               Siap transaksi
@@ -261,7 +282,7 @@ export function AuthShell({
             )}
           >
             <div className="mb-7 flex justify-center lg:hidden">
-              <BrandLogo size="lg" />
+              <BrandLogo size="lg" tone={logoTone} />
             </div>
 
             {children}

@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, Tags, Boxes, Users, Receipt, BarChart3,
   Settings, ShoppingCart, History, QrCode, Store, ClipboardList,
-  TicketPercent, CreditCard, Layers, Truck, Undo2, Contact, Database, Wallet, LifeBuoy, type LucideIcon,
+  TicketPercent, CreditCard, Layers, Truck, Undo2, Contact, Database, Wallet, LifeBuoy, TrendingUp, type LucideIcon,
 } from 'lucide-react';
 import type { Role } from '@/types';
 
@@ -45,7 +45,7 @@ export const NAV_TREE: NavNode[] = [
   { label: 'Stok', href: '/admin/stok', icon: Boxes, roles: ['admin', 'gudang'] },
   { label: 'Pembelian Barang', href: '/admin/pembelian', icon: Truck, roles: ['admin', 'gudang'] },
   { label: 'Retur Barang', href: '/admin/retur', icon: Undo2, roles: ['admin', 'gudang'] },
-  { label: 'Riwayat Transaksi', href: '/admin/transaksi', icon: Receipt, roles: ['admin', 'gudang'] },
+  { label: 'Riwayat Transaksi', href: '/admin/transaksi', icon: Receipt, roles: ['gudang'] },
   // QR Menu (pesan dari meja) dinonaktifkan sementara — aktifkan lagi dengan
   // mengembalikan baris di bawah + set FEATURE_QR_ORDER=true di backend .env.
   // { label: 'QR Menu', href: '/admin/meja', icon: QrCode, roles: ['admin'] },
@@ -55,6 +55,7 @@ export const NAV_TREE: NavNode[] = [
     icon: BarChart3,
     roles: ['admin'],
     children: [
+      { label: 'Laporan Transaksi', href: '/admin/transaksi', icon: Receipt, roles: ['admin'] },
       { label: 'Laporan Keuangan', href: '/admin/laporan', icon: BarChart3, roles: ['admin'] },
       { label: 'Laporan Closing', href: '/admin/laporan/closing', icon: Wallet, roles: ['admin'] },
     ],
@@ -67,6 +68,7 @@ export const NAV_TREE: NavNode[] = [
   { label: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard, roles: ['superadmin'] },
   { label: 'Merchant', href: '/superadmin/merchant', icon: Store, roles: ['superadmin'] },
   { label: 'Pembayaran Langganan', href: '/superadmin/langganan', icon: CreditCard, roles: ['superadmin'] },
+  { label: 'Laporan Pendapatan', href: '/superadmin/laporan', icon: TrendingUp, roles: ['superadmin'] },
   { label: 'Harga Plan', href: '/superadmin/langganan/setting', icon: QrCode, roles: ['superadmin'] },
 
   // ===== Kasir =====

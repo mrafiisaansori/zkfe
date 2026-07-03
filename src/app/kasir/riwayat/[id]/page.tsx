@@ -8,6 +8,7 @@ import { Receipt } from '@/components/pos/Receipt';
 import { penjualanService, getErrorMessage } from '@/services';
 import type { Penjualan } from '@/types';
 import { formatRupiah, formatDate } from '@/utils/format';
+import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { useAuthStore } from '@/stores/authStore';
 import type { PlanType } from '@/types';
@@ -43,13 +44,18 @@ export default function DetailRiwayatPage() {
       </div>
       <Card><CardBody>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-bold text-slate-800">Nota #{String(trx.ID).padStart(6, '0')}</h2>
+          <h2 className="font-bold text-slate-800">Nota {nomorNotaPenjualanLabel(trx)}</h2>
           <Badge tone={trx.STATUS === 1 ? 'green' : 'red'}>{trx.STATUS === 1 ? 'Sah' : 'Batal'}</Badge>
         </div>
         <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-          <span>{formatDate(trx.TANGGAL)} {trx.JAM} &middot; {trx.jenisBayar?.NAMA}</span>
+          <span>{formatDate(trx.TANGGAL)}, {trx.JAM?.slice(0, 5)} &middot; {trx.jenisBayar?.NAMA}</span>
           <Badge tone="green">{trx.STATUS_BAYAR || 'LUNAS'}</Badge>
         </div>
+        {trx.open_bill && (
+          <p className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700">
+            Dari Open Bill {trx.open_bill.no_bill} · Dibuka oleh {trx.open_bill.dibuka_oleh ?? '-'}
+          </p>
+        )}
         <div id="print-area" className="rounded-lg border border-dashed border-slate-200">
           <Receipt ref={printRef} trx={trx} namaToko={user?.merchant?.nama} plan={plan} />
         </div>

@@ -19,10 +19,10 @@ export function UpgradeBanner() {
   if (plan === 'PRO' || plan === 'BUSINESS') return null; // sudah berbayar: tidak perlu banner
 
   return (
-    <div className="mb-5 overflow-hidden rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-accent/10 p-5 shadow-card">
+    <div className="mb-5 overflow-hidden rounded-2xl border border-brand-200 bg-gradient-to-br from-brand-50 via-white to-accent/10 p-5 shadow-card dark:border-brand-800/50 dark:from-slate-900 dark:via-slate-900 dark:to-brand-900/40 dark:shadow-[0_0_30px_-14px_rgba(0,163,204,0.4)]">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="min-w-0">
-          <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
+          <div className="mb-1.5 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary dark:bg-accent/15 dark:text-accent">
             <Crown className="h-3.5 w-3.5" /> Upgrade ke PRO
           </div>
           <h3 className="text-lg font-bold text-ink">Buka semua fitur untuk toko Anda</h3>

@@ -9,6 +9,7 @@ import { penjualanService, getErrorMessage } from '@/services';
 import type { Penjualan } from '@/types';
 import type { PaginationMeta } from '@/services/api';
 import { formatRupiah, formatDate, todayISO } from '@/utils/format';
+import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
 export default function TransaksiPage() {
@@ -48,7 +49,7 @@ export default function TransaksiPage() {
   }
 
   const columns: Column<Penjualan>[] = [
-    { header: 'Nota', accessor: (r) => <span className="font-mono">#{String(r.ID).padStart(6, '0')}</span> },
+    { header: 'Nota', accessor: (r) => <span className="font-mono">{nomorNotaPenjualanLabel(r)}</span> },
     { header: 'Tanggal', accessor: (r) => formatDate(r.TANGGAL) },
     { header: 'Kasir', accessor: (r) => r.kasir?.NAMA ?? '-' },
     { header: 'Bayar', accessor: (r) => r.jenisBayar?.NAMA ?? '-' },
@@ -84,7 +85,7 @@ export default function TransaksiPage() {
       </CardBody></Card>
 
       <ConfirmDialog open={!!toVoid} onClose={() => setToVoid(null)} onConfirm={handleVoid} loading={busy}
-        title="Batalkan transaksi" message={`Batalkan nota #${toVoid ? String(toVoid.ID).padStart(6, '0') : ''}? Stok akan dikembalikan.`} confirmLabel="Batalkan" />
+        title="Batalkan transaksi" message={`Batalkan nota ${nomorNotaPenjualanLabel(toVoid)}? Stok akan dikembalikan.`} confirmLabel="Batalkan" />
     </div>
   );
 }
