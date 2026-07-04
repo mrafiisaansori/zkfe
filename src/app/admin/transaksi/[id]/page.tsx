@@ -61,7 +61,7 @@ export default function DetailTransaksiPage() {
             </div>
           </div>
           {trx.open_bill && (
-            <p className="mb-4 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700">
+            <p className="mb-4 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700 dark:bg-accent/15 dark:text-accent">
               Dari Open Bill {trx.open_bill.no_bill} · Dibuka oleh {trx.open_bill.dibuka_oleh ?? '-'}
             </p>
           )}
@@ -84,7 +84,7 @@ export default function DetailTransaksiPage() {
           </div>
           <div className="mt-4 flex flex-col items-end gap-1 text-sm">
             {Number(trx.DISKON) > 0 && <p className="text-slate-500">Diskon: {formatRupiah(trx.DISKON)}</p>}
-            <p className="text-lg font-bold text-brand-600">Total: {formatRupiah(trx.TOTAL)}</p>
+            <p className="text-lg font-bold text-brand-600 dark:text-accent">Total: {formatRupiah(trx.TOTAL)}</p>
           </div>
         </CardBody></Card>
 

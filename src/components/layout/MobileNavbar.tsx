@@ -36,7 +36,7 @@ export function MobileNavbar() {
                 : 'text-slate-500 hover:bg-slate-50',
             )}
           >
-            <Icon className={cn('h-5 w-5', active ? isKasir ? 'text-primary' : 'text-brand-600' : 'text-slate-400')} />
+            <Icon className={cn('h-5 w-5', active ? isKasir ? 'text-primary' : 'text-brand-600 dark:text-accent' : 'text-slate-400')} />
             <span className="truncate px-1">{item.label}</span>
           </Link>
         );

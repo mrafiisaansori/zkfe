@@ -241,7 +241,7 @@ export function PaymentModal({
         {/* Rincian */}
         <div className="space-y-1 rounded-xl bg-slate-50 px-3 py-2.5 text-sm">
           <div className="flex justify-between text-slate-500"><span>Setelah diskon</span><span>{formatRupiah(baseTotal)}</span></div>
-          {voucherDiskon > 0 && <div className="flex justify-between text-emerald-600"><span>Voucher {voucher?.kode}</span><span>- {formatRupiah(voucherDiskon)}</span></div>}
+          {voucherDiskon > 0 && <div className="flex justify-between text-emerald-600 dark:text-emerald-300"><span>Voucher {voucher?.kode}</span><span>- {formatRupiah(voucherDiskon)}</span></div>}
           {ppn > 0 && <div className="flex justify-between text-slate-500"><span>PPN {tax?.PPN_PERSEN}%</span><span>{formatRupiah(ppn)}</span></div>}
           {service > 0 && <div className="flex justify-between text-slate-500"><span>Service {tax?.SERVICE_PERSEN}%</span><span>{formatRupiah(service)}</span></div>}
           <div className="flex justify-between border-t border-slate-200 pt-1 font-bold text-slate-800"><span>Total</span><span>{formatRupiah(total)}</span></div>
@@ -290,10 +290,10 @@ export function PaymentModal({
               </p>
             </div>
           ) : (
-            <div className="flex flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center">
+            <div className="flex flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center dark:border-amber-500/30 dark:bg-amber-500/10">
               <AlertTriangle className="h-9 w-9 text-amber-500" />
-              <p className="text-sm font-medium text-amber-800">QRIS belum tersedia</p>
-              <p className="text-xs text-amber-700">
+              <p className="text-sm font-medium text-amber-800 dark:text-amber-300">QRIS belum tersedia</p>
+              <p className="text-xs text-amber-700 dark:text-amber-300">
                 Pembayaran QRIS belum diatur atau sedang nonaktif. Admin perlu mengaktifkannya di
                 menu <b>Pengaturan &gt; Pembayaran</b>.
               </p>
@@ -320,9 +320,9 @@ export function PaymentModal({
               placeholder={isTransfer ? 'mis. no. ref / nama pengirim' : ''}
             />
 
-            <div className={`flex items-center justify-between rounded-xl p-4 ${kurang ? 'bg-rose-50' : 'bg-emerald-50'}`}>
+            <div className={`flex items-center justify-between rounded-xl p-4 ${kurang ? 'bg-rose-50 dark:bg-rose-500/15' : 'bg-emerald-50 dark:bg-emerald-500/15'}`}>
               <span className="text-sm font-medium text-slate-600">Kembalian</span>
-              <span className={`text-lg font-semibold ${kurang ? 'text-rose-600' : 'text-emerald-600'}`}>
+              <span className={`text-lg font-semibold ${kurang ? 'text-rose-600 dark:text-rose-300' : 'text-emerald-600 dark:text-emerald-300'}`}>
                 {kurang ? `Kurang ${formatRupiah(Math.abs(kembalian))}` : formatRupiah(kembalian)}
               </span>
             </div>
@@ -391,19 +391,19 @@ function MidtransPanel({ phase, data, msg, total, checkingStatus, onCheckStatus 
   }
   if (phase === 'paid') {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center dark:border-emerald-500/30 dark:bg-emerald-500/10">
         <CheckCircle2 className="h-12 w-12 text-emerald-500" />
-        <p className="text-base font-semibold text-emerald-800">Pembayaran Berhasil</p>
-        <p className="text-xs text-emerald-700">Transaksi otomatis ditandai LUNAS.</p>
+        <p className="text-base font-semibold text-emerald-800 dark:text-emerald-300">Pembayaran Berhasil</p>
+        <p className="text-xs text-emerald-700 dark:text-emerald-300">Transaksi otomatis ditandai LUNAS.</p>
       </div>
     );
   }
   if (phase === 'failed') {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center">
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center dark:border-rose-500/30 dark:bg-rose-500/10">
         <AlertTriangle className="h-10 w-10 text-rose-500" />
-        <p className="text-sm font-medium text-rose-800">Pembayaran belum selesai</p>
-        <p className="text-xs text-rose-700">{msg || 'Terjadi kendala. Silakan buat ulang QRIS.'}</p>
+        <p className="text-sm font-medium text-rose-800 dark:text-rose-300">Pembayaran belum selesai</p>
+        <p className="text-xs text-rose-700 dark:text-rose-300">{msg || 'Terjadi kendala. Silakan buat ulang QRIS.'}</p>
       </div>
     );
   }
@@ -416,7 +416,7 @@ function MidtransPanel({ phase, data, msg, total, checkingStatus, onCheckStatus 
             <p className="text-[10px] font-bold uppercase tracking-wider text-primary">QRIS Dinamis</p>
             <p className="text-lg font-bold text-slate-900">{formatRupiah(data?.gross_amount || total)}</p>
           </div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
             <Loader2 className="h-3 w-3 animate-spin" /> Menunggu Pembayaran
           </span>
         </div>

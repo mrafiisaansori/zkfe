@@ -311,7 +311,7 @@ export default function ReturPage() {
             <Button variant="outline" size="sm" onClick={addRow}><Plus className="h-4 w-4" /> Tambah item</Button>
           </div>
 
-          <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <div className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
             Stok TIDAK berubah saat draft. Stok baru berkurang ketika retur diselesaikan. Pembatalan retur selesai akan mengembalikan stok.
           </div>
 

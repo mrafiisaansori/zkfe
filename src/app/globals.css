@@ -200,13 +200,20 @@ input[type=number] { -moz-appearance: textfield; }
 .dark [class~="bg-brand-50"],
 .dark [class~="bg-brand-50/60"],
 .dark [class~="bg-brand-50/50"],
-.dark [class~="bg-brand-100"] { background-color: #0a2540; }
+.dark [class~="bg-brand-100"],
+.dark [class~="hover:bg-brand-50"]:hover { background-color: #0a2540; }
 .dark [class~="border-brand-100"] { border-color: #0a6cb0; }
 
 /* Badge status pastel (Badge.tsx: hijau/merah/kuning) */
 .dark [class~="bg-emerald-50"] { background-color: rgba(16, 185, 129, 0.16); }
-.dark [class~="bg-rose-50"] { background-color: rgba(244, 63, 94, 0.16); }
+.dark [class~="bg-rose-50"],
+.dark [class~="hover:bg-rose-50"]:hover { background-color: rgba(244, 63, 94, 0.16); }
 .dark [class~="bg-amber-50"] { background-color: rgba(245, 158, 11, 0.18); }
 .dark [class~="ring-emerald-200"] { --tw-ring-color: rgba(16, 185, 129, 0.35); }
 .dark [class~="ring-rose-200"] { --tw-ring-color: rgba(244, 63, 94, 0.35); }
 .dark [class~="ring-amber-200"] { --tw-ring-color: rgba(245, 158, 11, 0.35); }
+
+/* Skeleton shimmer: base biru-terang custom (bukan token Tailwind) tidak ikut
+   retrofit di atas -> override manual agar tidak jadi kotak terang di kartu gelap. */
+.dark .zk-skeleton { background: linear-gradient(100deg, #29374a 0%, #334155 50%, #29374a 100%); }
+.dark .zk-skeleton::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent); }

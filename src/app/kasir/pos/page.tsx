@@ -759,7 +759,7 @@ export default function PosPage() {
         }
       >
         <div className="flex flex-col items-center gap-3 py-2 text-center">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600">
+          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300">
             <Wallet className="h-7 w-7" />
           </span>
           <p className="text-sm text-slate-600">
@@ -799,18 +799,18 @@ export default function PosPage() {
       >
         {success && (
           <div>
-            <div className="mb-3 flex flex-col items-center gap-2 rounded-2xl bg-emerald-50 p-5 text-center">
+            <div className="mb-3 flex flex-col items-center gap-2 rounded-2xl bg-emerald-50 p-5 text-center dark:bg-emerald-500/15">
               <CheckCircle2 className="h-12 w-12 text-emerald-500" />
               <p className="text-sm text-slate-600">
                 Nota <b className="font-semibold text-slate-800">{nomorNotaPenjualanLabel(success.trx)}</b> tersimpan.
               </p>
               {success.result.kembalian != null && (
-                <p className="text-lg font-semibold text-emerald-600">
+                <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-300">
                   Kembalian: {formatRupiah(success.result.kembalian)}
                 </p>
               )}
               {success.trx.open_bill && (
-                <p className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-emerald-700">
+                <p className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                   Open Bill {success.trx.open_bill.no_bill} · dibuka oleh {success.trx.open_bill.dibuka_oleh ?? '-'}
                 </p>
               )}

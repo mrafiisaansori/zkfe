@@ -115,11 +115,11 @@ export function SelectMenu({
                     onClick={() => { onChange(o.value); setOpen(false); }}
                     className={cn(
                       'flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-sm transition-colors',
-                      active ? 'bg-brand-50 font-semibold text-brand-700' : 'text-slate-700 hover:bg-slate-50',
+                      active ? 'bg-brand-50 font-semibold text-brand-700 dark:bg-accent/15 dark:text-accent' : 'text-slate-700 hover:bg-slate-50',
                     )}
                   >
                     <span className="truncate">{o.label}</span>
-                    {active && <Check className="h-4 w-4 shrink-0 text-brand-600" />}
+                    {active && <Check className="h-4 w-4 shrink-0 text-brand-600 dark:text-accent" />}
                   </button>
                 );
               })}

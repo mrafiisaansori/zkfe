@@ -106,7 +106,7 @@ export default function UserPage() {
             <code className="flex-1 break-all font-mono text-base font-semibold text-slate-800">{resetResult?.password}</code>
             <Button variant="outline" size="sm" onClick={copyPassword}>{copied ? 'Tersalin' : 'Salin'}</Button>
           </div>
-          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
             Catatan: password ini hanya ditampilkan <b>sekali</b>. Setelah ditutup, password tidak dapat dilihat lagi.
           </p>
           <div className="flex justify-end">

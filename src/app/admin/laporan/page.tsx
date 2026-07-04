@@ -171,7 +171,7 @@ export default function LaporanPage() {
           </div>
         </div>
         {!isPro && (
-          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
             Rekapitulasi laporan lengkap (laba kotor, per metode bayar, per kasir, produk terlaris, rekap harian/bulanan, export)
             tersedia di paket <b>PRO</b> dan <b>BUSINESS</b>.
           </p>

@@ -24,9 +24,9 @@ function MoneyBox({ label, value, icon: Icon, tone = 'brand' }: {
   label: string; value: number; icon: React.ElementType; tone?: 'brand' | 'green' | 'amber';
 }) {
   const tones = {
-    brand: 'bg-brand-50 text-primary',
-    green: 'bg-emerald-50 text-emerald-600',
-    amber: 'bg-amber-50 text-amber-600',
+    brand: 'bg-brand-50 text-primary dark:bg-accent/15 dark:text-accent',
+    green: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
+    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
   } as const;
   return (
     <div className="rounded-2xl border border-line bg-white p-4 shadow-card sm:p-5">
@@ -162,7 +162,7 @@ export default function ClosingPage() {
             <CardBody>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300">
                     <LockOpen className="h-6 w-6" />
                   </span>
                   <div>
@@ -279,14 +279,14 @@ export default function ClosingPage() {
           <button
             type="button"
             onClick={() => setMutasiTipe('OUT')}
-            className={`flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition-colors ${mutasiTipe === 'OUT' ? 'border-rose-400 bg-rose-50 text-rose-600' : 'border-line bg-white text-slate-500'}`}
+            className={`flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition-colors ${mutasiTipe === 'OUT' ? 'border-rose-400 bg-rose-50 text-rose-600 dark:border-rose-500/40 dark:bg-rose-500/15 dark:text-rose-300' : 'border-line bg-white text-slate-500'}`}
           >
             <ArrowUpCircle className="h-5 w-5" /> Kas Keluar
           </button>
           <button
             type="button"
             onClick={() => setMutasiTipe('IN')}
-            className={`flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition-colors ${mutasiTipe === 'IN' ? 'border-emerald-400 bg-emerald-50 text-emerald-600' : 'border-line bg-white text-slate-500'}`}
+            className={`flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition-colors ${mutasiTipe === 'IN' ? 'border-emerald-400 bg-emerald-50 text-emerald-600 dark:border-emerald-500/40 dark:bg-emerald-500/15 dark:text-emerald-300' : 'border-line bg-white text-slate-500'}`}
           >
             <ArrowDownCircle className="h-5 w-5" /> Kas Masuk
           </button>
@@ -335,11 +335,11 @@ export default function ClosingPage() {
               </div>
               <div className="mt-1.5 flex items-center justify-between text-sm">
                 <span className="text-slate-600">Kas masuk</span>
-                <span className="font-medium text-emerald-600">+ {formatRupiah(preview.mutasi_in)}</span>
+                <span className="font-medium text-emerald-600 dark:text-emerald-300">+ {formatRupiah(preview.mutasi_in)}</span>
               </div>
               <div className="mt-1.5 flex items-center justify-between text-sm">
                 <span className="text-slate-600">Kas keluar</span>
-                <span className="font-medium text-rose-600">- {formatRupiah(preview.mutasi_out)}</span>
+                <span className="font-medium text-rose-600 dark:text-rose-300">- {formatRupiah(preview.mutasi_out)}</span>
               </div>
               <div className="mt-2.5 flex items-center justify-between border-t border-brand-200 pt-2.5">
                 <span className="font-semibold text-ink">Uang tunai seharusnya</span>
@@ -357,7 +357,7 @@ export default function ClosingPage() {
                 autoFocus
               />
               {actualCash !== '' && (
-                <div className={`mt-3 flex items-center justify-between rounded-xl px-4 py-3 ${selisihLive === 0 ? 'bg-emerald-50 text-emerald-700' : selisihLive < 0 ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}`}>
+                <div className={`mt-3 flex items-center justify-between rounded-xl px-4 py-3 ${selisihLive === 0 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : selisihLive < 0 ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'}`}>
                   <span className="flex items-center gap-2 text-sm font-semibold">
                     {selisihLive === 0 ? <CheckCircle2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
                     {selisihLive === 0 ? 'Cocok / pas' : selisihLive < 0 ? 'Kurang' : 'Lebih'}
@@ -418,7 +418,7 @@ function ResultCard({ result, selisih, onNew }: { result: KasShift; selisih: num
     <Card>
       <CardBody>
         <div className="flex flex-col items-center gap-3 py-6 text-center">
-          <span className={`flex h-16 w-16 items-center justify-center rounded-2xl ${pas ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+          <span className={`flex h-16 w-16 items-center justify-center rounded-2xl ${pas ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300' : 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300'}`}>
             {pas ? <CheckCircle2 className="h-8 w-8" /> : <AlertTriangle className="h-8 w-8" />}
           </span>
           <h3 className="text-lg font-bold text-ink">Kasir Ditutup</h3>
@@ -431,9 +431,9 @@ function ResultCard({ result, selisih, onNew }: { result: KasShift; selisih: num
               <p className="text-xs text-slate-500">Dihitung</p>
               <p className="font-bold text-ink">{formatRupiah(result.ACTUAL_CASH)}</p>
             </div>
-            <div className={`rounded-xl p-3 ${pas ? 'bg-emerald-50' : kurang ? 'bg-rose-50' : 'bg-amber-50'}`}>
+            <div className={`rounded-xl p-3 ${pas ? 'bg-emerald-50 dark:bg-emerald-500/15' : kurang ? 'bg-rose-50 dark:bg-rose-500/15' : 'bg-amber-50 dark:bg-amber-500/15'}`}>
               <p className="text-xs text-slate-500">{pas ? 'Selisih' : kurang ? 'Kurang' : 'Lebih'}</p>
-              <p className={`font-bold ${pas ? 'text-emerald-700' : kurang ? 'text-rose-700' : 'text-amber-700'}`}>{formatRupiah(Math.abs(selisih))}</p>
+              <p className={`font-bold ${pas ? 'text-emerald-700 dark:text-emerald-300' : kurang ? 'text-rose-700 dark:text-rose-300' : 'text-amber-700 dark:text-amber-300'}`}>{formatRupiah(Math.abs(selisih))}</p>
             </div>
           </div>
           <Button variant="outline" className="mt-2" onClick={onNew}>

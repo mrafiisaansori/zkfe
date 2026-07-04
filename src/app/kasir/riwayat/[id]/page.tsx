@@ -52,14 +52,14 @@ export default function DetailRiwayatPage() {
           <Badge tone="green">{trx.STATUS_BAYAR || 'LUNAS'}</Badge>
         </div>
         {trx.open_bill && (
-          <p className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700">
+          <p className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700 dark:bg-accent/15 dark:text-accent">
             Dari Open Bill {trx.open_bill.no_bill} · Dibuka oleh {trx.open_bill.dibuka_oleh ?? '-'}
           </p>
         )}
         <div id="print-area" className="rounded-lg border border-dashed border-slate-200">
           <Receipt ref={printRef} trx={trx} namaToko={user?.merchant?.nama} plan={plan} />
         </div>
-        <p className="mt-3 text-right text-lg font-bold text-brand-600">Total: {formatRupiah(trx.TOTAL)}</p>
+        <p className="mt-3 text-right text-lg font-bold text-brand-600 dark:text-accent">Total: {formatRupiah(trx.TOTAL)}</p>
       </CardBody></Card>
     </div>
   );

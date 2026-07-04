@@ -106,7 +106,7 @@ function FinanceDashboard() {
             <h3 className="mb-1 font-semibold text-slate-900">Produk stok menipis</h3>
             <p className="mb-4 text-sm text-slate-500">Prioritaskan restock sebelum transaksi ramai.</p>
             {summary.stok_menipis.length === 0 ? (
-              <p className="rounded-xl bg-emerald-50 py-8 text-center text-sm font-medium text-emerald-700">Semua stok aman</p>
+              <p className="rounded-xl bg-emerald-50 py-8 text-center text-sm font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Semua stok aman</p>
             ) : (
               <ul className="space-y-2">
                 {summary.stok_menipis.map((p) => (

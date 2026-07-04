@@ -28,7 +28,7 @@ export function ConfirmDialog({
       }
     >
       <div className="flex items-start gap-3">
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${danger ? 'bg-rose-50 text-rose-500' : 'bg-brand-50 text-brand-600'}`}>
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${danger ? 'bg-rose-50 text-rose-500 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-brand-50 text-brand-600 dark:bg-accent/15 dark:text-accent'}`}>
           <AlertTriangle className="h-5 w-5" />
         </span>
         <p className="pt-1.5 text-sm leading-6 text-slate-600">{message}</p>

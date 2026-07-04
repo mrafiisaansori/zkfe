@@ -135,17 +135,17 @@ export default function RiwayatKasirPage() {
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="flex items-center gap-3 rounded-xl bg-brand-50 p-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-brand-600"><ReceiptText className="h-5 w-5" /></span>
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-brand-600 dark:text-accent"><ReceiptText className="h-5 w-5" /></span>
               <div>
                 <p className="text-xs text-slate-500">Jumlah transaksi</p>
                 <p className="text-lg font-semibold text-slate-800">{rekap.jumlah}</p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-4">
-              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-emerald-600"><Wallet className="h-5 w-5" /></span>
+            <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-4 dark:bg-emerald-500/15">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white text-emerald-600 dark:text-emerald-300"><Wallet className="h-5 w-5" /></span>
               <div>
                 <p className="text-xs text-slate-500">Total penjualan</p>
-                <p className="text-lg font-semibold text-emerald-700">{formatRupiah(rekap.total)}</p>
+                <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">{formatRupiah(rekap.total)}</p>
               </div>
             </div>
           </div>

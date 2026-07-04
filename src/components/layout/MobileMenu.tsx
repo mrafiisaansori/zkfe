@@ -94,10 +94,7 @@ export function MobileMenu() {
         <div className="fixed inset-0 z-[70] lg:hidden">
           <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] animate-fade-in" onClick={() => setOpen(false)} />
 
-          <aside className={cn(
-            'zk-drawer absolute left-0 top-0 flex h-full w-72 max-w-[82%] flex-col overflow-hidden text-white shadow-sidebar',
-            isKasir ? 'bg-gradient-to-b from-[#042f1a] via-[#075c5d] to-[#0b8ab7]' : 'bg-gradient-to-b from-ink via-primary to-primary',
-          )}>
+          <aside className="zk-drawer absolute left-0 top-0 flex h-full w-72 max-w-[82%] flex-col overflow-hidden bg-gradient-to-b from-ink via-primary to-primary text-white shadow-sidebar">
             <span aria-hidden className="zk-pattern-dots pointer-events-none absolute inset-0 opacity-[0.06]" />
 
             <div className="relative flex h-16 items-center justify-between px-4">
