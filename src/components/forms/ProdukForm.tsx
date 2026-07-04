@@ -1,8 +1,8 @@
 'use client';
 import { useRef, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { ImagePlus, X } from 'lucide-react';
-import { Input, Select, Button, ProductImage } from '@/components/ui';
+import { Input, CurrencyInput, Select, Button, ProductImage } from '@/components/ui';
 import type { Produk, Kategori } from '@/types';
 import type { ProdukInput } from '@/services/produk.service';
 import { productImage } from '@/utils/image';
@@ -19,7 +19,7 @@ const MAX = 2 * 1024 * 1024;
 const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
 export function ProdukForm({ kategori, initial, loading, onSubmit, onCancel }: Props) {
-  const { register, handleSubmit, formState: { errors } } = useForm<ProdukInput>({
+  const { register, control, handleSubmit, formState: { errors } } = useForm<ProdukInput>({
     defaultValues: initial ? {
       nama: initial.NAMA, id_kategori: initial.ID_KATEGORI, harga_beli: initial.HARGA_BELI,
       harga_jual: initial.HARGA_JUAL, barcode: initial.BARCODE ?? '', stok: initial.STOK,
@@ -76,10 +76,22 @@ export function ProdukForm({ kategori, initial, loading, onSubmit, onCancel }: P
         options={kategori.map((k) => ({ value: k.ID, label: k.DESKRIPSI }))}
         {...register('id_kategori', { required: 'Kategori wajib dipilih', valueAsNumber: true })} />
       <div className="grid grid-cols-2 gap-3">
-        <Input label="Harga beli" type="number" error={errors.harga_beli?.message}
-          {...register('harga_beli', { required: 'Wajib', valueAsNumber: true, min: { value: 0, message: '>= 0' } })} />
-        <Input label="Harga jual" type="number" error={errors.harga_jual?.message}
-          {...register('harga_jual', { required: 'Wajib', valueAsNumber: true, min: { value: 0, message: '>= 0' } })} />
+        <Controller
+          name="harga_beli"
+          control={control}
+          rules={{ required: 'Wajib', min: { value: 0, message: '>= 0' } }}
+          render={({ field }) => (
+            <CurrencyInput label="Harga beli" error={errors.harga_beli?.message} value={field.value} onChange={field.onChange} />
+          )}
+        />
+        <Controller
+          name="harga_jual"
+          control={control}
+          rules={{ required: 'Wajib', min: { value: 0, message: '>= 0' } }}
+          render={({ field }) => (
+            <CurrencyInput label="Harga jual" error={errors.harga_jual?.message} value={field.value} onChange={field.onChange} />
+          )}
+        />
       </div>
       {!initial && (
         <Input label="Stok awal" type="number" {...register('stok', { valueAsNumber: true })} />

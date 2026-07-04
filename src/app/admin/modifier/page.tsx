@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Plus, Trash2, Pencil, Layers } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardBody, Button, Modal, ConfirmDialog, Badge, Input, EmptyState } from '@/components/ui';
+import { Card, CardBody, Button, Modal, ConfirmDialog, Badge, Input, CurrencyInput, EmptyState } from '@/components/ui';
 import { modifierService, getErrorMessage } from '@/services';
 import type { ModifierGroup } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
@@ -140,7 +140,7 @@ export default function ModifierPage() {
           </ul>
           <div className="grid grid-cols-2 gap-2">
             <Input label="Nama opsi" value={oForm.nama} onChange={(e) => setOForm((f) => ({ ...f, nama: e.target.value }))} placeholder="mis. Large" />
-            <Input label="Tambahan harga" type="number" min={0} value={oForm.harga || ''} onChange={(e) => setOForm((f) => ({ ...f, harga: Number(e.target.value) }))} />
+            <CurrencyInput label="Tambahan harga" value={oForm.harga} onChange={(v) => setOForm((f) => ({ ...f, harga: v }))} />
           </div>
           <Button onClick={addOption} loading={saving} disabled={!oForm.nama.trim()}><Plus className="h-4 w-4" /> Tambah opsi</Button>
         </div>

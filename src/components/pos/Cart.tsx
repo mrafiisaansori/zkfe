@@ -132,11 +132,11 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
             <div className="flex h-10 items-center rounded-xl border border-slate-200 bg-white pl-3 transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-accent/25">
               <span className="text-sm font-bold text-slate-400">Rp</span>
               <input
-                type="number"
-                min={0}
-                value={diskon || ''}
+                type="text"
+                inputMode="numeric"
+                value={diskon ? diskon.toLocaleString('id-ID') : ''}
                 placeholder="0"
-                onChange={(e) => setDiskon(Number(e.target.value))}
+                onChange={(e) => setDiskon(Number(e.target.value.replace(/\D/g, '')) || 0)}
                 className="h-full w-full bg-transparent px-2 text-right text-sm font-bold text-slate-800 outline-none placeholder:text-slate-300"
               />
             </div>

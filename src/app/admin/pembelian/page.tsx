@@ -4,7 +4,7 @@ import { Plus, Trash2, CheckCircle2, Eye, Printer, X, FileText } from 'lucide-re
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
-  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, Pagination, type Column,
+  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, CurrencyInput, Pagination, type Column,
 } from '@/components/ui';
 import {
   pembelianService, supplierService, produkService, identitasService, getErrorMessage,
@@ -248,7 +248,7 @@ export default function PembelianPage() {
                   />
                 </div>
                 <div className="col-span-6 sm:col-span-2">
-                  <Input type="number" min={0} placeholder="Harga" value={it.harga_beli} onChange={(e) => setItem(i, { harga_beli: e.target.value === '' ? '' : Number(e.target.value) })} />
+                  <CurrencyInput placeholder="Harga" value={it.harga_beli} onChange={(v) => setItem(i, { harga_beli: v })} />
                 </div>
                 <div className="col-span-6 sm:col-span-2">
                   <Input type="number" min={0} placeholder="Qty" value={it.qty} onChange={(e) => setItem(i, { qty: e.target.value === '' ? '' : Number(e.target.value) })} />

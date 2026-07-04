@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, Input, UpgradeModal, type Column } from '@/components/ui';
+import { Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, Input, CurrencyInput, UpgradeModal, type Column } from '@/components/ui';
 import { voucherService, getErrorMessage } from '@/services';
 import type { VoucherInput } from '@/services/voucher.service';
 import type { Voucher } from '@/types';
@@ -101,9 +101,13 @@ export default function VoucherPage() {
                 <option value="PERSEN">Persen (%)</option>
               </select>
             </div>
-            <Input label={form.tipe === 'PERSEN' ? 'Nilai (%)' : 'Nilai (Rp)'} type="number" min={0} value={form.nilai || ''} onChange={(e) => setForm((f) => ({ ...f, nilai: Number(e.target.value) }))} />
+            {form.tipe === 'PERSEN' ? (
+              <Input label="Nilai (%)" type="number" min={0} value={form.nilai || ''} onChange={(e) => setForm((f) => ({ ...f, nilai: Number(e.target.value) }))} />
+            ) : (
+              <CurrencyInput label="Nilai (Rp)" value={form.nilai} onChange={(v) => setForm((f) => ({ ...f, nilai: v }))} />
+            )}
           </div>
-          <Input label="Minimal transaksi (Rp)" type="number" min={0} value={form.min_transaksi || ''} onChange={(e) => setForm((f) => ({ ...f, min_transaksi: Number(e.target.value) }))} />
+          <CurrencyInput label="Minimal transaksi (Rp)" value={form.min_transaksi} onChange={(v) => setForm((f) => ({ ...f, min_transaksi: v }))} />
           <div className="grid grid-cols-2 gap-3">
             <Input label="Berlaku dari" type="date" value={form.valid_from || ''} onChange={(e) => setForm((f) => ({ ...f, valid_from: e.target.value }))} />
             <Input label="Berlaku sampai" type="date" value={form.valid_until || ''} onChange={(e) => setForm((f) => ({ ...f, valid_until: e.target.value }))} />

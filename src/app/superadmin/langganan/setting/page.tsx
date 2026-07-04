@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardBody, Button, Input } from '@/components/ui';
+import { Card, CardBody, Button, Input, CurrencyInput } from '@/components/ui';
 import { subscriptionService, getErrorMessage } from '@/services';
 import { usePageLoading } from '@/hooks/usePageLoading';
 
@@ -78,12 +78,12 @@ export default function HargaLanggananSettingPage() {
       <Card><CardBody>
         <div className="max-w-2xl space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="Harga PRO 1 Bulan (Rp)" type="number" min={0} value={form.price_monthly || ''} onChange={(event) => setForm((current) => ({ ...current, price_monthly: Number(event.target.value) }))} />
-            <Input label="Harga PRO 3 Bulan (Rp)" type="number" min={0} value={form.price_3_months || ''} onChange={(event) => setForm((current) => ({ ...current, price_3_months: Number(event.target.value) }))} />
-            <Input label="Harga PRO 6 Bulan (Rp)" type="number" min={0} value={form.price_6_months || ''} onChange={(event) => setForm((current) => ({ ...current, price_6_months: Number(event.target.value) }))} />
-            <Input label="Harga PRO 1 Tahun (Rp)" type="number" min={0} value={form.price_yearly || ''} onChange={(event) => setForm((current) => ({ ...current, price_yearly: Number(event.target.value) }))} />
-            <Input label="Harga BUSINESS Bulanan (Rp)" type="number" min={0} value={form.price_business_monthly || ''} onChange={(event) => setForm((current) => ({ ...current, price_business_monthly: Number(event.target.value) }))} />
-            <Input label="Harga BUSINESS Tahunan (Rp)" type="number" min={0} value={form.price_business_yearly || ''} onChange={(event) => setForm((current) => ({ ...current, price_business_yearly: Number(event.target.value) }))} />
+            <CurrencyInput label="Harga PRO 1 Bulan (Rp)" value={form.price_monthly} onChange={(v) => setForm((current) => ({ ...current, price_monthly: v }))} />
+            <CurrencyInput label="Harga PRO 3 Bulan (Rp)" value={form.price_3_months} onChange={(v) => setForm((current) => ({ ...current, price_3_months: v }))} />
+            <CurrencyInput label="Harga PRO 6 Bulan (Rp)" value={form.price_6_months} onChange={(v) => setForm((current) => ({ ...current, price_6_months: v }))} />
+            <CurrencyInput label="Harga PRO 1 Tahun (Rp)" value={form.price_yearly} onChange={(v) => setForm((current) => ({ ...current, price_yearly: v }))} />
+            <CurrencyInput label="Harga BUSINESS Bulanan (Rp)" value={form.price_business_monthly} onChange={(v) => setForm((current) => ({ ...current, price_business_monthly: v }))} />
+            <CurrencyInput label="Harga BUSINESS Tahunan (Rp)" value={form.price_business_yearly} onChange={(v) => setForm((current) => ({ ...current, price_business_yearly: v }))} />
           </div>
           <Input label="Masa berlaku QRIS (jam)" type="number" min={1} max={168} value={form.payment_ttl_hours || ''} onChange={(event) => setForm((current) => ({ ...current, payment_ttl_hours: Number(event.target.value) }))} />
           <p className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-slate-600">QRIS dibuat oleh Midtrans sesuai nominal di atas. Kredensial gateway dikelola melalui ENV backend dan tidak ditampilkan di halaman ini.</p>

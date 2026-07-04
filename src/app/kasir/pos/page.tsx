@@ -88,6 +88,13 @@ export default function PosPage() {
     setSaveBillOpen(true);
   }
 
+  // Klik "Split Bill": FREE -> modal upgrade; PRO -> modal split bill.
+  function handleSplitBillClick() {
+    if (!requireShift()) return;
+    if (!isPro) { setUpgradeOpen(true); return; }
+    setSplitBillOpen(true);
+  }
+
   // Muat open bill ke keranjang saat dibuka via ?bill=<id>.
   useEffect(() => {
     if (!billParam) {
@@ -112,9 +119,10 @@ export default function PosPage() {
 
   useEffect(() => {
     if (splitParam === '1' && billCtx && cart.items.length > 0) {
-      setSplitBillOpen(true);
+      if (isPro) setSplitBillOpen(true);
+      else setUpgradeOpen(true);
     }
-  }, [splitParam, billCtx?.id, cart.items.length]);
+  }, [splitParam, billCtx?.id, cart.items.length, isPro]);
 
   const loadProduk = useCallback(async (
     q = '',
@@ -578,7 +586,7 @@ export default function PosPage() {
                 onCheckout={() => { if (requireShift()) setPayOpen(true); }}
                 onSaveBill={handleSaveBillClick}
                 onUpdateBill={handleUpdateBill}
-                onSplitBill={() => { if (requireShift()) setSplitBillOpen(true); }}
+                onSplitBill={handleSplitBillClick}
                 onCancelBill={() => setCancelOpen(true)}
               />
         </aside>
@@ -607,7 +615,7 @@ export default function PosPage() {
                 onCheckout={() => { if (requireShift()) setPayOpen(true); }}
                 onSaveBill={handleSaveBillClick}
                 onUpdateBill={handleUpdateBill}
-                onSplitBill={() => { if (requireShift()) setSplitBillOpen(true); }}
+                onSplitBill={handleSplitBillClick}
                 onCancelBill={() => setCancelOpen(true)}
               />
             </div>

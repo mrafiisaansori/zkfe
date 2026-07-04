@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScanLine, AlertTriangle, CheckCircle2, TicketPercent, Zap, Loader2, Clock3, RefreshCw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Modal, Button, SelectMenu, Input, UpgradeModal } from '@/components/ui';
+import { Modal, Button, SelectMenu, Input, CurrencyInput, UpgradeModal } from '@/components/ui';
 import { formatRupiah } from '@/utils/format';
 import { voucherService, getErrorMessage } from '@/services';
 import type { JenisBayar, Qris, TaxSetting, PlanType, MidtransQrisResult, PaymentStatusResult } from '@/types';
@@ -302,7 +302,7 @@ export function PaymentModal({
         ) : (
           // ===== Mode tunai / lainnya =====
           <>
-            <Input label="Uang dibayar" type="number" min={0} value={bayar || ''} onChange={(e) => setBayar(Number(e.target.value))} />
+            <CurrencyInput label="Uang dibayar" value={bayar} onChange={setBayar} />
 
             <div className="flex flex-wrap gap-2">
               {QUICK.map((q) => (

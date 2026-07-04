@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Minus, Plus, ReceiptText, RefreshCw, ScanLine, Users, Zap } from 'lucide-react';
-import { Modal, Button, Input, SelectMenu } from '@/components/ui';
+import { Modal, Button, Input, CurrencyInput, SelectMenu } from '@/components/ui';
 import { cn } from '@/utils/cn';
 import { formatRupiah } from '@/utils/format';
 import type { CartItem, JenisBayar, MidtransQrisResult, PaymentStatusResult, PlanType, Qris, TaxSetting } from '@/types';
@@ -382,7 +382,7 @@ export function SplitBillModal({
                   )
                 ) : (
                   <>
-                    <Input label="Uang dibayar" type="number" min={0} value={bayar || ''} onChange={(e) => setBayar(Number(e.target.value))} />
+                    <CurrencyInput label="Uang dibayar" value={bayar} onChange={setBayar} />
                     <button type="button" onClick={() => setBayar(activeData.total)} className="w-full rounded-xl border border-line bg-white px-3 py-2 text-sm font-bold text-primary hover:bg-brand-50">Uang Pas</button>
                   </>
                 )}

@@ -4,7 +4,7 @@ import { Plus, Trash2, CheckCircle2, Eye, X, FileText, Ban } from 'lucide-react'
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import {
-  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, Pagination, type Column,
+  Card, CardBody, Button, DataTable, Modal, ConfirmDialog, Badge, SelectMenu, SearchInput, Input, CurrencyInput, Pagination, type Column,
 } from '@/components/ui';
 import {
   returService, pembelianService, supplierService, produkService, identitasService, getErrorMessage,
@@ -294,7 +294,7 @@ export default function ReturPage() {
                     <Input label="Qty retur" type="number" min={0} value={it.qty} onChange={(e) => setItem(i, { qty: e.target.value === '' ? '' : Number(e.target.value) })} />
                   </div>
                   <div className="col-span-5 sm:col-span-3">
-                    <Input label="Nilai/harga" type="number" min={0} value={it.harga} onChange={(e) => setItem(i, { harga: e.target.value === '' ? '' : Number(e.target.value) })} />
+                    <CurrencyInput label="Nilai/harga" value={it.harga} onChange={(v) => setItem(i, { harga: v })} />
                   </div>
                   <div className="col-span-2 sm:col-span-1">
                     <Button variant="ghost" size="sm" onClick={() => removeRow(i)} title="Hapus baris"><X className="h-4 w-4 text-red-500" /></Button>

@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { Card, CardBody, Button, Modal, Input, Badge } from '@/components/ui';
+import { Card, CardBody, Button, Modal, Input, CurrencyInput, Badge } from '@/components/ui';
 import { kasShiftService, getErrorMessage } from '@/services';
 import { formatRupiah } from '@/utils/format';
 import { usePageLoading } from '@/hooks/usePageLoading';
@@ -50,19 +50,19 @@ export default function ClosingPage() {
 
   // Modal buka kasir
   const [openModal, setOpenModal] = useState(false);
-  const [modalAwal, setModalAwal] = useState('');
+  const [modalAwal, setModalAwal] = useState(0);
   const [stationInput, setStationInput] = useState('');
 
   // Modal kas masuk/keluar
   const [mutasiModal, setMutasiModal] = useState(false);
   const [mutasiTipe, setMutasiTipe] = useState<'IN' | 'OUT'>('OUT');
-  const [mutasiNominal, setMutasiNominal] = useState('');
+  const [mutasiNominal, setMutasiNominal] = useState(0);
   const [mutasiKet, setMutasiKet] = useState('');
 
   // Modal tutup kasir
   const [closeModal, setCloseModal] = useState(false);
   const [preview, setPreview] = useState<ShiftClosePreview | null>(null);
-  const [actualCash, setActualCash] = useState('');
+  const [actualCash, setActualCash] = useState(0);
   const [closeNote, setCloseNote] = useState('');
 
   // Hasil closing (ringkasan setelah tutup)
@@ -85,11 +85,11 @@ export default function ClosingPage() {
     setBusy(true);
     try {
       await kasShiftService.open({
-        modal_awal: Number(modalAwal) || 0,
+        modal_awal: modalAwal,
         station: stationInput.trim() || undefined,
       });
       toast.success('Kasir berhasil dibuka');
-      setOpenModal(false); setModalAwal(''); setStationInput('');
+      setOpenModal(false); setModalAwal(0); setStationInput('');
       load();
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setBusy(false); }
@@ -97,15 +97,14 @@ export default function ClosingPage() {
 
   async function handleMutasi() {
     if (!shift) return;
-    const nom = Number(mutasiNominal) || 0;
-    if (nom <= 0) { toast.error('Nominal harus lebih dari 0'); return; }
+    if (mutasiNominal <= 0) { toast.error('Nominal harus lebih dari 0'); return; }
     setBusy(true);
     try {
       await kasShiftService.mutasi(shift.ID, {
-        tipe: mutasiTipe, nominal: nom, keterangan: mutasiKet.trim() || undefined,
+        tipe: mutasiTipe, nominal: mutasiNominal, keterangan: mutasiKet.trim() || undefined,
       });
       toast.success(mutasiTipe === 'OUT' ? 'Kas keluar dicatat' : 'Kas masuk dicatat');
-      setMutasiModal(false); setMutasiNominal(''); setMutasiKet('');
+      setMutasiModal(false); setMutasiNominal(0); setMutasiKet('');
       load();
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setBusy(false); }
@@ -116,7 +115,7 @@ export default function ClosingPage() {
     setBusy(true);
     try {
       const p = await kasShiftService.closePreview(shift.ID);
-      setPreview(p); setActualCash(''); setCloseNote(''); setCloseModal(true);
+      setPreview(p); setActualCash(0); setCloseNote(''); setCloseModal(true);
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setBusy(false); }
   }
@@ -126,7 +125,7 @@ export default function ClosingPage() {
     setBusy(true);
     try {
       const closed = await kasShiftService.close(shift.ID, {
-        actual_cash: Number(actualCash) || 0,
+        actual_cash: actualCash,
         catatan: closeNote.trim() || undefined,
       });
       setCloseModal(false); setShift(null); setResult(closed);
@@ -137,7 +136,7 @@ export default function ClosingPage() {
 
   // Selisih live di modal tutup.
   const expectedCash = preview?.expected_cash ?? 0;
-  const selisihLive = (Number(actualCash) || 0) - expectedCash;
+  const selisihLive = actualCash - expectedCash;
 
   const closedSelisih = result?.SELISIH_CASH ?? 0;
 
@@ -241,15 +240,14 @@ export default function ClosingPage() {
         <p className="mb-4 text-sm text-slate-500">
           Masukkan jumlah uang tunai yang ada di laci saat ini (modal awal / uang kembalian).
         </p>
-        <Input
+        <CurrencyInput
           label="Modal Awal (uang di laci)"
-          type="number" inputMode="numeric" min={0}
           placeholder="0"
           value={modalAwal}
-          onChange={(e) => setModalAwal(e.target.value)}
+          onChange={setModalAwal}
           autoFocus
         />
-        {modalAwal && <p className="mt-1.5 text-sm font-semibold text-primary">{formatRupiah(Number(modalAwal) || 0)}</p>}
+        {modalAwal > 0 && <p className="mt-1.5 text-sm font-semibold text-primary">{formatRupiah(modalAwal)}</p>}
         <div className="mt-4">
           <Input
             label="Nama Laci / Terminal (opsional)"
@@ -291,14 +289,13 @@ export default function ClosingPage() {
             <ArrowDownCircle className="h-5 w-5" /> Kas Masuk
           </button>
         </div>
-        <Input
+        <CurrencyInput
           label="Nominal"
-          type="number" inputMode="numeric" min={0}
           placeholder="0"
           value={mutasiNominal}
-          onChange={(e) => setMutasiNominal(e.target.value)}
+          onChange={setMutasiNominal}
         />
-        {mutasiNominal && <p className="mt-1.5 text-sm font-semibold text-primary">{formatRupiah(Number(mutasiNominal) || 0)}</p>}
+        {mutasiNominal > 0 && <p className="mt-1.5 text-sm font-semibold text-primary">{formatRupiah(mutasiNominal)}</p>}
         <div className="mt-4">
           <Input
             label="Keterangan (opsional)"
@@ -348,15 +345,14 @@ export default function ClosingPage() {
             </div>
 
             <div>
-              <Input
+              <CurrencyInput
                 label="Uang tunai hasil hitung di laci"
-                type="number" inputMode="numeric" min={0}
                 placeholder="Hitung & masukkan jumlah uang fisik"
                 value={actualCash}
-                onChange={(e) => setActualCash(e.target.value)}
+                onChange={setActualCash}
                 autoFocus
               />
-              {actualCash !== '' && (
+              {actualCash > 0 && (
                 <div className={`mt-3 flex items-center justify-between rounded-xl px-4 py-3 ${selisihLive === 0 ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' : selisihLive < 0 ? 'bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'}`}>
                   <span className="flex items-center gap-2 text-sm font-semibold">
                     {selisihLive === 0 ? <CheckCircle2 className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
