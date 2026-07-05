@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Printer } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card, CardBody, Button, LoadingState, ErrorState, Badge } from '@/components/ui';
-import { Receipt } from '@/components/pos/Receipt';
+import { Receipt, type ReceiptSize } from '@/components/pos/Receipt';
 import { penjualanService, getErrorMessage } from '@/services';
 import type { Penjualan } from '@/types';
 import { formatRupiah, formatDate } from '@/utils/format';
@@ -12,6 +12,9 @@ import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { useAuthStore } from '@/stores/authStore';
 import type { PlanType } from '@/types';
+import { cn } from '@/utils/cn';
+import { printReceipt } from '@/utils/printThermal';
+import { buildReceiptEscPos } from '@/utils/escpos';
 
 export default function DetailTransaksiPage() {
   const user = useAuthStore((s) => s.user);
@@ -23,6 +26,7 @@ export default function DetailTransaksiPage() {
   usePageLoading(loading);
   const [error, setError] = useState('');
   const printRef = useRef<HTMLDivElement>(null);
+  const [receiptSize, setReceiptSize] = useState<ReceiptSize>('58');
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -40,7 +44,27 @@ export default function DetailTransaksiPage() {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <Button variant="ghost" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /> Kembali</Button>
-        <Button variant="outline" onClick={() => window.print()}><Printer className="h-4 w-4" /> Cetak struk</Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-0.5">
+            {(['58', '80'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setReceiptSize(s)}
+                className={cn('rounded-md px-2.5 py-1 text-xs font-bold transition-colors',
+                  receiptSize === s ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-100')}
+              >{s}mm</button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              const bytes = buildReceiptEscPos({ trx, namaToko: user?.merchant?.nama, plan, size: receiptSize });
+              printReceipt(printRef.current, receiptSize, bytes);
+            }}
+          >
+            <Printer className="h-4 w-4" /> Cetak struk
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -91,7 +115,7 @@ export default function DetailTransaksiPage() {
         <Card><CardBody>
           <h3 className="mb-3 font-semibold text-slate-800">Preview Struk</h3>
           <div id="print-area" className="rounded-lg border border-dashed border-slate-200">
-            <Receipt ref={printRef} trx={trx} namaToko={user?.merchant?.nama} plan={plan} />
+            <Receipt ref={printRef} trx={trx} namaToko={user?.merchant?.nama} plan={plan} size={receiptSize} />
           </div>
         </CardBody></Card>
       </div>

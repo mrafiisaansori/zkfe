@@ -5,13 +5,19 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 // (mis. di lokal). Set hanya di production agar widget hanya muncul di cloud.
 const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '';
 
-// Nonaktifkan Turnstile saat diakses dari localhost / dev lokal agar tidak
-// mengganggu development & testing. Production tetap aktif.
+// Nonaktifkan Turnstile saat diakses dari localhost / dev lokal (termasuk IP LAN
+// seperti 192.168.x.x saat testing dari device lain di WiFi yang sama) agar tidak
+// mengganggu development & testing. Production tetap aktif (domain publik asli).
 function isLocalHost() {
   if (typeof window === 'undefined') return false;
   const h = window.location.hostname;
-  return h === 'localhost' || h === '127.0.0.1' || h === '::1'
-    || h.endsWith('.local') || h.endsWith('.localhost');
+  if (h === 'localhost' || h === '127.0.0.1' || h === '::1'
+    || h.endsWith('.local') || h.endsWith('.localhost')) return true;
+
+  const m = h.match(/^(\d{1,3})\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+  if (!m) return false;
+  const a = Number(m[1]), b = Number(m[2]);
+  return a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168);
 }
 
 // Dipanggil saat event submit (client-only). Jangan gunakan hasil pengecekan

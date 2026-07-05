@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { SearchInput, Button, Modal, Input, ConfirmDialog, UpgradeModal } from '@/components/ui';
 import { ProductGrid } from '@/components/pos/ProductGrid';
 import { Cart } from '@/components/pos/Cart';
-import { PaymentModal } from '@/components/pos/PaymentModal';
+import { PaymentModal, isQrisName } from '@/components/pos/PaymentModal';
 import { SplitBillModal, type SplitConfirmData } from '@/components/pos/SplitBillModal';
 import { Receipt } from '@/components/pos/Receipt';
 import { useCartStore } from '@/stores/cartStore';
@@ -15,7 +15,9 @@ import { produkService, jenisBayarService, kategoriService, penjualanService, pa
 import { cn } from '@/utils/cn';
 import { formatRupiah } from '@/utils/format';
 import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
-import { printThermal } from '@/utils/printThermal';
+import { printReceipt } from '@/utils/printThermal';
+import { buildReceiptEscPos } from '@/utils/escpos';
+import { enqueueSale, buildOfflineDraft, isNetworkError } from '@/utils/offlineQueue';
 import type { Produk, JenisBayar, Kategori, Penjualan, CheckoutResult, Qris, TaxSetting, Identitas, ModifierGroup, ModifierOption, PlanType, MidtransQrisResult } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import type { PaginationMeta } from '@/services/api';
@@ -42,7 +44,7 @@ export default function PosPage() {
   const [payOpen, setPayOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
-  const [success, setSuccess] = useState<{ result: CheckoutResult; trx: Penjualan } | null>(null);
+  const [success, setSuccess] = useState<{ result: CheckoutResult; trx: Penjualan; offline?: boolean } | null>(null);
 
   // ===== Open Bill =====
   const router = useRouter();
@@ -228,6 +230,15 @@ export default function PosPage() {
     if (!user) return;
     if (!requireShift()) { setPayOpen(false); return; }
     setCheckingOut(true);
+    const checkoutPayload = {
+      items: cart.items.map((i) => ({ id_produk: i.id_produk, qty: i.qty, modifier_option_ids: i.modifierOptionIds || [] })),
+      id_jenis_bayar: data.id_jenis_bayar,
+      id_user: user.id,
+      bayar: data.bayar,
+      diskon: cart.diskon,
+      keterangan: data.keterangan,
+      kode_voucher: data.kode_voucher,
+    };
     try {
       // Mode edit bill -> bayar open bill; selain itu checkout langsung biasa.
       const result = billCtx
@@ -237,15 +248,7 @@ export default function PosPage() {
             diskon: cart.diskon,
             keterangan: data.keterangan,
           })
-        : await penjualanService.checkout({
-            items: cart.items.map((i) => ({ id_produk: i.id_produk, qty: i.qty, modifier_option_ids: i.modifierOptionIds || [] })),
-            id_jenis_bayar: data.id_jenis_bayar,
-            id_user: user.id,
-            bayar: data.bayar,
-            diskon: cart.diskon,
-            keterangan: data.keterangan,
-            kode_voucher: data.kode_voucher,
-          });
+        : await penjualanService.checkout(checkoutPayload);
       const trx = await penjualanService.getById(result.id);
       cart.clear();
       setPayOpen(false);
@@ -253,7 +256,33 @@ export default function PosPage() {
       if (billCtx) router.replace('/kasir/pos');
       setSuccess({ result, trx });
       loadProduk(search, 1, false, activeKat);
-    } catch (err) { toast.error(getErrorMessage(err)); }
+    } catch (err) {
+      const metodeNama = jenisBayar.find((j) => j.ID === data.id_jenis_bayar)?.NAMA;
+      // Cuma transaksi tunai/non-gateway di checkout biasa (bukan open bill) yang aman
+      // diantre offline — QRIS/Midtrans butuh gateway online beneran, gak bisa "disimpan
+      // lalu disinkron" karena pembayarannya sendiri belum pernah terjadi.
+      if (!billCtx && !isQrisName(metodeNama) && isNetworkError(err)) {
+        enqueueSale(checkoutPayload);
+        const { result, trx } = buildOfflineDraft({
+          items: cart.items,
+          bayar: data.bayar,
+          diskon: cart.diskon,
+          keterangan: data.keterangan,
+          jenisBayarId: data.id_jenis_bayar,
+          jenisBayarNama: metodeNama,
+          kasirNama: user.nama,
+          tax,
+          plan,
+        });
+        cart.clear();
+        setPayOpen(false);
+        setCartOpen(false);
+        setSuccess({ result, trx, offline: true });
+        toast('Koneksi terputus — transaksi disimpan offline & otomatis dikirim saat online lagi.', { icon: '📡' });
+      } else {
+        toast.error(getErrorMessage(err));
+      }
+    }
     finally { setCheckingOut(false); }
   }
 
@@ -492,7 +521,7 @@ export default function PosPage() {
                   : 'Cari produk, tambahkan ke keranjang, lalu lakukan pembayaran.'}
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* Status sesi kasir */}
               {shiftActive === true && (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
@@ -796,7 +825,21 @@ export default function PosPage() {
                 >{s}mm</button>
               ))}
             </div>
-            <Button variant="outline" onClick={() => printThermal(receiptThermalRef.current, receiptSize)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (!success) return;
+                const bytes = buildReceiptEscPos({
+                  trx: success.trx,
+                  namaToko: identitas?.NAMA || user?.merchant?.nama,
+                  alamatToko: identitas?.ALAMAT || undefined,
+                  bayar: success.result.bayar,
+                  plan,
+                  size: receiptSize,
+                });
+                printReceipt(receiptThermalRef.current, receiptSize, bytes);
+              }}
+            >
               <Printer className="h-4 w-4" /> Cetak thermal
             </Button>
             <Button onClick={() => setSuccess(null)}>
@@ -809,6 +852,11 @@ export default function PosPage() {
           <div>
             <div className="mb-3 flex flex-col items-center gap-2 rounded-2xl bg-emerald-50 p-5 text-center dark:bg-emerald-500/15">
               <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+              {success.offline && (
+                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                  Tersimpan offline — akan disinkron otomatis
+                </span>
+              )}
               <p className="text-sm text-slate-600">
                 Nota <b className="font-semibold text-slate-800">{nomorNotaPenjualanLabel(success.trx)}</b> tersimpan.
               </p>

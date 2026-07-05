@@ -29,7 +29,7 @@ const QUICK = [0, 50000, 100000, 150000, 200000];
 const MIDTRANS = 'MIDTRANS' as const;
 
 // Deteksi metode QRIS statis dari daftar jenis bayar (berdasarkan nama).
-const isQrisName = (nama?: string) => !!nama && nama.toUpperCase().includes('QRIS');
+export const isQrisName = (nama?: string) => !!nama && nama.toUpperCase().includes('QRIS');
 
 export function PaymentModal({
   open, onClose, total: baseTotal, jenisBayar, qris, tax, loading, plan,
