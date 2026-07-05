@@ -827,12 +827,13 @@ export default function PosPage() {
             </div>
             <Button
               variant="outline"
-              onClick={() => {
+              onClick={async () => {
                 if (!success) return;
-                const bytes = buildReceiptEscPos({
+                const bytes = await buildReceiptEscPos({
                   trx: success.trx,
                   namaToko: identitas?.NAMA || user?.merchant?.nama,
                   alamatToko: identitas?.ALAMAT || undefined,
+                  logoUrl: identitas?.LOGO_URL,
                   bayar: success.result.bayar,
                   plan,
                   size: receiptSize,
@@ -877,6 +878,7 @@ export default function PosPage() {
                 trx={success.trx}
                 namaToko={identitas?.NAMA || user?.merchant?.nama}
                 alamatToko={identitas?.ALAMAT || undefined}
+                logoUrl={identitas?.LOGO_URL}
                 bayar={success.result.bayar}
                 plan={plan}
                 size={receiptSize}

@@ -10,6 +10,7 @@ interface ReceiptProps {
   trx: Penjualan;
   namaToko?: string;
   alamatToko?: string;
+  logoUrl?: string | null;
   bayar?: number | null;
   plan?: PlanType;
   size?: ReceiptSize;
@@ -23,7 +24,7 @@ const widthPx: Record<ReceiptSize, string> = { '58': 'w-[220px]', '80': 'w-[300p
  * dan branding sesuai plan: FREE WAJIB menampilkan "Powered by Zona Kasir".
  */
 export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
-  ({ trx, namaToko, alamatToko, bayar, plan = 'FREE', size = '58' }, ref) => {
+  ({ trx, namaToko, alamatToko, logoUrl, bayar, plan = 'FREE', size = '58' }, ref) => {
     const displayNamaToko = namaToko || (plan === 'FREE' ? 'TOKO ZONA KASIR' : 'TOKO');
     const total = Number(trx.TOTAL) || 0;
     const diskon = Number(trx.DISKON) || 0;
@@ -40,6 +41,11 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
     return (
       <div ref={ref} className={`receipt-print mx-auto ${widthPx[size]} bg-[#fff] p-3 font-mono text-[11px] leading-tight text-black`}>
         <div className="text-center">
+          {/* grayscale: printer thermal cuma hitam-putih — preview web disamakan biar gak ada kejutan pas cetak. */}
+          {logoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt="" className="mx-auto mb-1 h-10 max-w-[70%] object-contain grayscale" />
+          )}
           <p className="text-sm font-bold uppercase">{displayNamaToko}</p>
           {alamatToko && <p className="text-[10px]">{alamatToko}</p>}
         </div>
@@ -98,6 +104,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           <div className="mt-1 text-center text-[10px]">
             <p className="font-bold">Powered by Zona Kasir</p>
             <p>POS mudah untuk toko &amp; UMKM</p>
+            <p>zonakasir.com</p>
           </div>
         )}
       </div>

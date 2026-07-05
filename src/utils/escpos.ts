@@ -2,13 +2,16 @@ import type { ReceiptSize } from '@/components/pos/Receipt';
 import { formatRupiah, formatDateTime } from '@/utils/format';
 import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import type { Penjualan, PlanType } from '@/types';
-import { truncate, center, twoCol, dashes } from '@/utils/textCols';
+import { truncate, center, twoCol, dashes, wrapText } from '@/utils/textCols';
+import { logoUrlToRaster } from '@/utils/escposImage';
 
 /**
  * Kolom karakter font A standar untuk thermal 58mm/80mm (RPP02N, POS58, dst).
  * Ini yang menentukan presisi: HARUS sama persis dengan lebar yang dipakai printThermal (48mm/72mm area cetak).
  */
 const COLS: Record<ReceiptSize, number> = { '58': 32, '80': 48 };
+// Lebar area cetak dalam dot (203dpi) — dipakai buat skala logo raster, bukan teks.
+const DOT_WIDTH: Record<ReceiptSize, number> = { '58': 384, '80': 576 };
 
 const ESC = 0x1b;
 
@@ -16,13 +19,14 @@ interface ReceiptProps {
   trx: Penjualan;
   namaToko?: string;
   alamatToko?: string;
+  logoUrl?: string | null;
   bayar?: number | null;
   plan?: PlanType;
   size?: ReceiptSize;
 }
 
 /** Susun struk sebagai perintah ESC/POS mentah, isinya cermin 1:1 dari <Receipt>. */
-export function buildReceiptEscPos({ trx, namaToko, alamatToko, bayar, plan = 'FREE', size = '58' }: ReceiptProps): Uint8Array {
+export async function buildReceiptEscPos({ trx, namaToko, alamatToko, logoUrl, bayar, plan = 'FREE', size = '58' }: ReceiptProps): Promise<Uint8Array> {
   const width = COLS[size];
   const displayNamaToko = namaToko || (plan === 'FREE' ? 'TOKO ZONA KASIR' : 'TOKO');
   const total = Number(trx.TOTAL) || 0;
@@ -34,9 +38,11 @@ export function buildReceiptEscPos({ trx, namaToko, alamatToko, bayar, plan = 'F
   const subtotal = items.reduce((s, d) => s + d.HARGA_JUAL * d.QTY, 0);
   const diskonItem = items.reduce((s, d) => s + (Number(d.DISKON) || 0), 0);
 
+  const logoRaster = logoUrl ? await logoUrlToRaster(logoUrl, DOT_WIDTH[size]) : new Uint8Array();
+
   const lines: string[] = [];
-  lines.push(center(displayNamaToko.toUpperCase(), width));
-  if (alamatToko) lines.push(center(alamatToko, width));
+  wrapText(displayNamaToko.toUpperCase(), width).forEach((l) => lines.push(center(l, width)));
+  if (alamatToko) wrapText(alamatToko, width).forEach((l) => lines.push(center(l, width)));
   lines.push(dashes(width));
   lines.push(twoCol('No', nomorNotaPenjualanLabel(trx), width));
   lines.push(twoCol('Tanggal', formatDateTime(`${trx.TANGGAL}T${trx.JAM || '00:00:00'}`), width));
@@ -71,13 +77,17 @@ export function buildReceiptEscPos({ trx, namaToko, alamatToko, bayar, plan = 'F
   if (plan === 'FREE') {
     lines.push(center('Powered by Zona Kasir', width));
     lines.push(center('POS mudah untuk toko & UMKM', width));
+    lines.push(center('zonakasir.com', width));
   }
 
   const body = lines.join('\n') + '\n\n\n\n';
   const encoder = new TextEncoder();
   return new Uint8Array([
     ESC, 0x40, // init
-    ESC, 0x61, 0, // align left (twoCol/center sudah handle perataan manual)
+    ESC, 0x61, 1, // align center (buat logo raster; teks isi struk tetap rata lewat spasi manual twoCol/center)
+    ...logoRaster,
+    ...(logoRaster.length ? [0x0a] : []),
+    ESC, 0x61, 0, // balik align left
     ...encoder.encode(body),
   ]);
   // ponytail: tanpa perintah cut (GS V) — RPP02N/POS58 58mm umumnya tanpa auto-cutter.

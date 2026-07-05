@@ -5,8 +5,8 @@ import { ArrowLeft, Printer } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card, CardBody, Button, LoadingState, ErrorState, Badge } from '@/components/ui';
 import { Receipt, type ReceiptSize } from '@/components/pos/Receipt';
-import { penjualanService, getErrorMessage } from '@/services';
-import type { Penjualan } from '@/types';
+import { penjualanService, identitasService, getErrorMessage } from '@/services';
+import type { Penjualan, Identitas } from '@/types';
 import { formatRupiah, formatDate } from '@/utils/format';
 import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
@@ -27,6 +27,7 @@ export default function DetailTransaksiPage() {
   const [error, setError] = useState('');
   const printRef = useRef<HTMLDivElement>(null);
   const [receiptSize, setReceiptSize] = useState<ReceiptSize>('58');
+  const [identitas, setIdentitas] = useState<Identitas | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -35,6 +36,7 @@ export default function DetailTransaksiPage() {
     finally { setLoading(false); }
   }, [id]);
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { identitasService.get().then((it) => setIdentitas(it || null)).catch(() => {}); }, []);
 
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} onRetry={load} />;
@@ -57,8 +59,15 @@ export default function DetailTransaksiPage() {
           </div>
           <Button
             variant="outline"
-            onClick={() => {
-              const bytes = buildReceiptEscPos({ trx, namaToko: user?.merchant?.nama, plan, size: receiptSize });
+            onClick={async () => {
+              const bytes = await buildReceiptEscPos({
+                trx,
+                namaToko: identitas?.NAMA || user?.merchant?.nama,
+                alamatToko: identitas?.ALAMAT || undefined,
+                logoUrl: identitas?.LOGO_URL,
+                plan,
+                size: receiptSize,
+              });
               printReceipt(printRef.current, receiptSize, bytes);
             }}
           >
@@ -115,7 +124,15 @@ export default function DetailTransaksiPage() {
         <Card><CardBody>
           <h3 className="mb-3 font-semibold text-slate-800">Preview Struk</h3>
           <div id="print-area" className="rounded-lg border border-dashed border-slate-200">
-            <Receipt ref={printRef} trx={trx} namaToko={user?.merchant?.nama} plan={plan} size={receiptSize} />
+            <Receipt
+              ref={printRef}
+              trx={trx}
+              namaToko={identitas?.NAMA || user?.merchant?.nama}
+              alamatToko={identitas?.ALAMAT || undefined}
+              logoUrl={identitas?.LOGO_URL}
+              plan={plan}
+              size={receiptSize}
+            />
           </div>
         </CardBody></Card>
       </div>

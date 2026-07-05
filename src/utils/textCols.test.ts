@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { truncate, center, twoCol, dashes } from './textCols.ts';
+import { truncate, center, twoCol, dashes, wrapText } from './textCols.ts';
 
 test('twoCol pads to exact width and right-aligns', () => {
   const line = twoCol('Subtotal', 'Rp 10.000', 32);
@@ -26,4 +26,21 @@ test('dashes fills exact width', () => {
 
 test('truncate is a no-op under length', () => {
   assert.equal(truncate('abc', 10), 'abc');
+});
+
+test('wrapText: alamat panjang jadi beberapa baris, bukan kepotong', () => {
+  const lines = wrapText('Jl. Merdeka No. 123, Kelurahan Sukamaju, Kecamatan Cibinong, Bogor', 32);
+  assert.ok(lines.length > 1);
+  lines.forEach((l) => assert.ok(l.length <= 32));
+  assert.equal(lines.join(' ').replace(/\s+/g, ' '), 'Jl. Merdeka No. 123, Kelurahan Sukamaju, Kecamatan Cibinong, Bogor');
+});
+
+test('wrapText: teks pendek tetap satu baris', () => {
+  assert.deepEqual(wrapText('Jl. Kenanga 5', 32), ['Jl. Kenanga 5']);
+});
+
+test('wrapText: satu kata lebih panjang dari lebar kertas dipotong paksa', () => {
+  const lines = wrapText('A'.repeat(50), 32);
+  assert.equal(lines[0].length, 32);
+  assert.equal(lines[1].length, 18);
 });
