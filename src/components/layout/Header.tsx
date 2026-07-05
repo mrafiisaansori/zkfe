@@ -48,7 +48,11 @@ export function Header() {
     >
       <div className="flex min-w-0 items-center gap-2.5">
         <MobileMenu />
-        <div className="lg:hidden">
+        {/* Mobile: logo saja (hemat tempat). Tablet (sm-lg): logo + tulisan. */}
+        <div className="sm:hidden">
+          <BrandLogo variant="icon" size="sm" tone={isDark ? 'dark' : 'light'} />
+        </div>
+        <div className="hidden sm:block lg:hidden">
           <BrandLogo size="sm" tone={isDark ? 'dark' : 'light'} />
         </div>
         <button
@@ -68,13 +72,20 @@ export function Header() {
             type="button"
             onClick={sync}
             title="Klik untuk coba sinkron ulang sekarang"
-            className={cn('inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm',
+            aria-label={failedCount > 0 ? `${failedCount} transaksi gagal sinkron` : `${pendingCount} transaksi belum sinkron`}
+            className={cn('relative inline-flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border text-xs font-semibold transition-colors sm:w-auto sm:justify-start sm:gap-2 sm:px-4 sm:text-sm',
               failedCount > 0
                 ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/15 dark:text-rose-300'
                 : 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-300')}
           >
             {failedCount > 0 ? <AlertTriangle className="h-4 w-4" /> : <WifiOff className="h-4 w-4" />}
-            <span>{failedCount > 0 ? `${failedCount} transaksi gagal sinkron` : `${pendingCount} transaksi belum sinkron`}</span>
+            {/* Mobile: cuma angka kecil nempel di ikon. sm+: kalimat lengkap. */}
+            <span className={cn('absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white sm:hidden',
+              failedCount > 0 ? 'bg-rose-600' : 'bg-amber-600')}
+            >
+              {failedCount || pendingCount}
+            </span>
+            <span className="hidden sm:inline">{failedCount > 0 ? `${failedCount} transaksi gagal sinkron` : `${pendingCount} transaksi belum sinkron`}</span>
           </button>
         )}
         {isKasir ? (
@@ -82,13 +93,14 @@ export function Header() {
             type="button"
             onClick={handleConnectBluetooth}
             title={!btSupported ? 'Browser ini belum dukung Bluetooth langsung — pakai Chrome/Edge' : btConnected ? 'Printer Bluetooth tersambung' : 'Sambungkan printer Bluetooth'}
-            className={cn('inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors sm:gap-2 sm:px-4 sm:text-sm',
+            aria-label={btConnected ? 'Printer Bluetooth tersambung' : 'Sambungkan printer Bluetooth'}
+            className={cn('inline-flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-full border text-xs font-semibold transition-colors sm:w-auto sm:justify-start sm:gap-2 sm:px-4 sm:text-sm',
               !btSupported ? 'border-slate-200 bg-slate-100 text-slate-400 dark:border-white/10 dark:bg-white/5 dark:text-slate-500'
                 : btConnected ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300'
                 : 'border-brand-100 bg-white/85 text-slate-600 shadow-card hover:bg-white')}
           >
             {btConnected ? <BluetoothConnected className="h-4 w-4" /> : <Bluetooth className="h-4 w-4" />}
-            <span>{btConnected ? 'Printer Connected' : 'Connect Printer'}</span>
+            <span className="hidden sm:inline">{btConnected ? 'Printer Connected' : 'Connect Printer'}</span>
           </button>
         ) : (
           <div className="hidden items-center gap-2.5 rounded-full border border-line bg-canvas py-1 pl-1 pr-3.5 sm:flex">
