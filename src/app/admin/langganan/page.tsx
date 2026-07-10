@@ -1,13 +1,13 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { CreditCard, Crown, Clock, Check, CheckCircle2, MessageCircle } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { CreditCard, Crown, Clock, Check, CheckCircle2, Loader2, ScanLine, ShieldCheck, MessageCircle, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardBody, Button, Modal, Badge, DataTable, type Column } from '@/components/ui';
 import { subscriptionService, authService, getErrorMessage } from '@/services';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/utils/cn';
-import { loadSnap, embedSnap } from '@/utils/snap';
+import { loadSnap, snapPay } from '@/utils/snap';
 import type { Billing, SubscriptionSetting, SubscriptionPayment, SubscriptionPaket, SubscriptionStatus, PlanType } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { formatRupiah, formatDateTime, formatCountdown } from '@/utils/format';
@@ -22,7 +22,6 @@ const statusLabel: Record<SubscriptionStatus, string> = {
   VERIFIED: 'Terverifikasi (lama)', REJECTED: 'Ditolak (lama)',
 };
 const BUSINESS_WHATSAPP_URL = 'https://wa.me/62859106997680?text=Halo%20Zona%20Kasir%2C%20saya%20ingin%20upgrade%20atau%20memperpanjang%20paket%20BUSINESS.';
-const SNAP_EMBED_ID = 'snap-embed-billing';
 
 // Manfaat PRO — dipakai untuk meyakinkan merchant FREE sebelum memilih paket.
 const PRO_BENEFITS = [
@@ -51,6 +50,7 @@ export default function LanggananPage() {
   const [paket, setPaket] = useState<SubscriptionPaket>('BULANAN');
   const [active, setActive] = useState<SubscriptionPayment | null>(null);
   const [creating, setCreating] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [businessContactOpen, setBusinessContactOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
 
@@ -106,27 +106,17 @@ export default function LanggananPage() {
     return () => window.clearInterval(timer);
   }, [payOpen, active?.STATUS]);
 
-  // Render Snap langsung di dalam modal (embed) selama modal terbuka & transaksi masih PENDING.
-  // embeddedTokenRef mencegah embed() dipanggil dua kali untuk token yang sama
-  // (React StrictMode/dev menjalankan effect 2x - Snap.js menolak panggilan embed kedua).
-  const embeddedTokenRef = useRef<string | null>(null);
-  // Reset guard saat modal ditutup, supaya buka lagi transaksi PENDING yang sama (dari riwayat) tetap ter-embed.
-  useEffect(() => { if (!payOpen) embeddedTokenRef.current = null; }, [payOpen]);
-  useEffect(() => {
-    if (!payOpen || !active || active.STATUS !== 'PENDING' || !active.SNAP_TOKEN || !active.MIDTRANS_CLIENT_KEY) return undefined;
-    if (embeddedTokenRef.current === active.SNAP_TOKEN) return undefined;
-    let cancelled = false;
-    (async () => {
-      try {
-        await loadSnap(active.MIDTRANS_CLIENT_KEY as string, !!active.MIDTRANS_IS_PRODUCTION);
-        if (cancelled) return;
-        embeddedTokenRef.current = active.SNAP_TOKEN as string;
-        embedSnap(active.SNAP_TOKEN as string, SNAP_EMBED_ID, { onSuccess: () => load(), onPending: () => load() });
-      } catch (error) { if (!cancelled) toast.error(getErrorMessage(error)); }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [payOpen, active?.SNAP_TOKEN, active?.MIDTRANS_CLIENT_KEY, active?.STATUS]);
+  // Buka popup Snap Midtrans (dipanggil saat transaksi dibuat & saat tombol "buka kembali").
+  async function openSnapPopup(payment: SubscriptionPayment) {
+    if (!payment.SNAP_TOKEN || !payment.MIDTRANS_CLIENT_KEY) return;
+    try {
+      await loadSnap(payment.MIDTRANS_CLIENT_KEY, !!payment.MIDTRANS_IS_PRODUCTION);
+      snapPay(payment.SNAP_TOKEN, {
+        onSuccess: () => load(),
+        onPending: () => load(),
+      });
+    } catch (error) { toast.error(getErrorMessage(error)); }
+  }
 
   async function createPayment() {
     if (targetPlan === 'BUSINESS') {
@@ -137,9 +127,22 @@ export default function LanggananPage() {
     try {
       const payment = await subscriptionService.createPayment(targetPlan, paket);
       setActive(payment); setPayOpen(true); setNow(Date.now());
+      openSnapPopup(payment);
       await load(); setActive(payment);
     } catch (error) { toast.error(getErrorMessage(error)); await load(); }
     finally { setCreating(false); }
+  }
+
+  async function cancelPayment() {
+    if (!active) return;
+    setCancelling(true);
+    try {
+      await subscriptionService.cancelPayment(active.ID);
+      toast.success('Pembayaran dibatalkan');
+      setPayOpen(false);
+      await load();
+    } catch (error) { toast.error(getErrorMessage(error)); }
+    finally { setCancelling(false); }
   }
 
   const plan = billing?.plan || 'FREE';
@@ -271,39 +274,40 @@ export default function LanggananPage() {
         <DataTable columns={columns} data={billing?.payments || []} loading={loading} rowKey={(row) => row.ID} showRowNumber emptyTitle="Belum ada pembayaran" />
       </CardBody></Card>
 
-      <Modal open={payOpen} onClose={() => setPayOpen(false)} title={`Pembayaran ${active?.TARGET_PLAN || 'Plan'}`} size={active?.STATUS === 'PENDING' && active?.SNAP_TOKEN ? 'md' : 'sm'}>
+      <Modal open={payOpen} onClose={() => setPayOpen(false)} title={`Pembayaran ${active?.TARGET_PLAN || 'Plan'}`} size="sm">
         {active && (
           <div className="space-y-3">
+            <div className="rounded-2xl bg-primary p-4 text-center text-white">
+              <p className="text-xs uppercase tracking-wider text-brand-100">Total Pembayaran</p>
+              <p className="mt-1 text-3xl font-bold">{formatRupiah(active.TOTAL_BAYAR)}</p>
+              <p className="mt-1 text-xs text-brand-100">{active.TARGET_PLAN} · {active.PAKET}</p>
+            </div>
+
             {active.STATUS === 'PENDING' && active.SNAP_TOKEN ? (
-              <>
-                <div className="flex items-center justify-between rounded-xl bg-brand-50 px-3.5 py-2.5 dark:bg-accent/10">
-                  <div>
-                    <p className="text-[10px] font-bold uppercase tracking-wide text-primary">{active.TARGET_PLAN} · {active.PAKET}</p>
-                    <p className="text-lg font-black text-slate-900">{formatRupiah(active.TOTAL_BAYAR)}</p>
-                  </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-amber-700 shadow-sm dark:bg-slate-800 dark:text-amber-300">
-                    <Clock className="h-3.5 w-3.5" /> {timerLabel}
-                  </span>
+              <div className="space-y-3">
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-brand-100 bg-white p-5 text-center">
+                  <ScanLine className="h-9 w-9 text-primary" />
+                  <p className="text-sm font-semibold text-slate-800">Selesaikan pembayaran di jendela Payment Gateway</p>
+                  <p className="text-xs leading-5 text-slate-500">GoPay, QRIS, transfer VA bank, atau kartu - sesuai channel yang aktif.</p>
+                  <Button variant="outline" className="mt-1 w-full" onClick={() => openSnapPopup(active)}>Buka Jendela Pembayaran</Button>
                 </div>
-                <div id={SNAP_EMBED_ID} className="min-h-[520px] w-full overflow-hidden rounded-2xl border border-brand-100 bg-white" />
-              </>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" /> Menunggu Pembayaran</div>
+                  <div className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600"><Clock className="mr-1 inline h-3.5 w-3.5" /> {timerLabel}</div>
+                </div>
+                <p className="flex items-center justify-center gap-1 text-xs text-slate-500"><ShieldCheck className="h-4 w-4 text-emerald-600" /> Status diperiksa otomatis setiap 3 detik.</p>
+                <Button variant="outline" className="w-full text-rose-600 hover:bg-rose-50 dark:text-rose-300" onClick={cancelPayment} loading={cancelling}>
+                  <Ban className="h-4 w-4" /> Batalkan Pembayaran
+                </Button>
+              </div>
+            ) : active.STATUS === 'PAID' ? (
+              <div className="rounded-2xl bg-emerald-50 p-6 text-center dark:bg-emerald-500/15">
+                <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
+                <p className="mt-2 font-bold text-emerald-800 dark:text-emerald-300">Pembayaran Berhasil</p>
+                <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">Plan {active.TARGET_PLAN} sudah aktif otomatis.</p>
+              </div>
             ) : (
-              <>
-                <div className="rounded-2xl bg-primary p-4 text-center text-white">
-                  <p className="text-xs uppercase tracking-wider text-brand-100">Total Pembayaran</p>
-                  <p className="mt-1 text-3xl font-bold">{formatRupiah(active.TOTAL_BAYAR)}</p>
-                  <p className="mt-1 text-xs text-brand-100">{active.TARGET_PLAN} · {active.PAKET}</p>
-                </div>
-                {active.STATUS === 'PAID' ? (
-                  <div className="rounded-2xl bg-emerald-50 p-6 text-center dark:bg-emerald-500/15">
-                    <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
-                    <p className="mt-2 font-bold text-emerald-800 dark:text-emerald-300">Pembayaran Berhasil</p>
-                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">Plan {active.TARGET_PLAN} sudah aktif otomatis.</p>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl bg-rose-50 p-5 text-center text-sm text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">Pembayaran {statusLabel[active.STATUS]}.</div>
-                )}
-              </>
+              <div className="rounded-2xl bg-rose-50 p-5 text-center text-sm text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">Pembayaran {statusLabel[active.STATUS]}.</div>
             )}
           </div>
         )}

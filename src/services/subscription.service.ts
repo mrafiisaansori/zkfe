@@ -21,6 +21,7 @@ export const subscriptionService = {
   createPayment: (plan: 'PRO' | 'BUSINESS', paket: SubscriptionPaket) =>
     post<SubscriptionPayment>('/subscription/payment', { plan, paket }),
   paymentStatus: (id: number) => get<SubscriptionPayment>(`/subscription/payment/${id}/status`),
+  cancelPayment: (id: number) => post<SubscriptionPayment>(`/subscription/payment/${id}/cancel`),
 
   // Super admin
   listPayments: (status?: SubscriptionStatus) =>
