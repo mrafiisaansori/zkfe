@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CreditCard, Crown, Clock, Check, CheckCircle2, Loader2, ShieldCheck, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -107,13 +107,20 @@ export default function LanggananPage() {
   }, [payOpen, active?.STATUS]);
 
   // Render Snap langsung di dalam modal (embed) selama modal terbuka & transaksi masih PENDING.
+  // embeddedTokenRef mencegah embed() dipanggil dua kali untuk token yang sama
+  // (React StrictMode/dev menjalankan effect 2x - Snap.js menolak panggilan embed kedua).
+  const embeddedTokenRef = useRef<string | null>(null);
+  // Reset guard saat modal ditutup, supaya buka lagi transaksi PENDING yang sama (dari riwayat) tetap ter-embed.
+  useEffect(() => { if (!payOpen) embeddedTokenRef.current = null; }, [payOpen]);
   useEffect(() => {
     if (!payOpen || !active || active.STATUS !== 'PENDING' || !active.SNAP_TOKEN || !active.MIDTRANS_CLIENT_KEY) return undefined;
+    if (embeddedTokenRef.current === active.SNAP_TOKEN) return undefined;
     let cancelled = false;
     (async () => {
       try {
         await loadSnap(active.MIDTRANS_CLIENT_KEY as string, !!active.MIDTRANS_IS_PRODUCTION);
         if (cancelled) return;
+        embeddedTokenRef.current = active.SNAP_TOKEN as string;
         embedSnap(active.SNAP_TOKEN as string, SNAP_EMBED_ID, { onSuccess: () => load(), onPending: () => load() });
       } catch (error) { if (!cancelled) toast.error(getErrorMessage(error)); }
     })();

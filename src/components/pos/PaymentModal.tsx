@@ -137,13 +137,18 @@ export function PaymentModal({
   }
 
   // Render Snap langsung di dalam modal (embed) begitu transaksi dibuat & container-nya termuat.
+  // embeddedTokenRef mencegah embed() dipanggil dua kali untuk token yang sama
+  // (React StrictMode/dev menjalankan effect 2x - Snap.js menolak panggilan embed kedua).
+  const embeddedTokenRef = useRef<string | null>(null);
   useEffect(() => {
     if (mtPhase !== 'waiting' || !mtData) return;
+    if (embeddedTokenRef.current === mtData.snap_token) return;
     let cancelled = false;
     (async () => {
       try {
         await loadSnap(mtData.client_key, mtData.is_production);
         if (cancelled) return;
+        embeddedTokenRef.current = mtData.snap_token;
         embedSnap(mtData.snap_token, SNAP_EMBED_ID, {
           onSuccess: () => checkMidtransStatus(mtData.transaction_id, true),
           onPending: () => checkMidtransStatus(mtData.transaction_id, true),
