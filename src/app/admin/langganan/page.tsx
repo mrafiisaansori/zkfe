@@ -1,6 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CreditCard, Crown, Clock, Check, CheckCircle2, Loader2, ShieldCheck, MessageCircle } from 'lucide-react';
+import { CreditCard, Crown, Clock, Check, CheckCircle2, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardBody, Button, Modal, Badge, DataTable, type Column } from '@/components/ui';
@@ -274,29 +274,36 @@ export default function LanggananPage() {
       <Modal open={payOpen} onClose={() => setPayOpen(false)} title={`Pembayaran ${active?.TARGET_PLAN || 'Plan'}`} size={active?.STATUS === 'PENDING' && active?.SNAP_TOKEN ? 'md' : 'sm'}>
         {active && (
           <div className="space-y-3">
-            <div className="rounded-2xl bg-primary p-4 text-center text-white">
-              <p className="text-xs uppercase tracking-wider text-brand-100">Total Pembayaran</p>
-              <p className="mt-1 text-3xl font-bold">{formatRupiah(active.TOTAL_BAYAR)}</p>
-              <p className="mt-1 text-xs text-brand-100">{active.TARGET_PLAN} · {active.PAKET}</p>
-            </div>
-
             {active.STATUS === 'PENDING' && active.SNAP_TOKEN ? (
-              <div className="space-y-3 text-center">
-                <div id={SNAP_EMBED_ID} className="min-h-[560px] w-full overflow-hidden rounded-2xl border border-brand-100 bg-white" />
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" /> Menunggu Pembayaran</div>
-                  <div className="rounded-xl bg-slate-50 px-3 py-2 text-slate-600"><Clock className="mr-1 inline h-3.5 w-3.5" /> {timerLabel}</div>
+              <>
+                <div className="flex items-center justify-between rounded-xl bg-brand-50 px-3.5 py-2.5 dark:bg-accent/10">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wide text-primary">{active.TARGET_PLAN} · {active.PAKET}</p>
+                    <p className="text-lg font-black text-slate-900">{formatRupiah(active.TOTAL_BAYAR)}</p>
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-white px-2.5 py-1 text-xs font-bold text-amber-700 shadow-sm dark:bg-slate-800 dark:text-amber-300">
+                    <Clock className="h-3.5 w-3.5" /> {timerLabel}
+                  </span>
                 </div>
-                <p className="flex items-center justify-center gap-1 text-xs text-slate-500"><ShieldCheck className="h-4 w-4 text-emerald-600" /> Status diperiksa otomatis setiap 3 detik.</p>
-              </div>
-            ) : active.STATUS === 'PAID' ? (
-              <div className="rounded-2xl bg-emerald-50 p-6 text-center dark:bg-emerald-500/15">
-                <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
-                <p className="mt-2 font-bold text-emerald-800 dark:text-emerald-300">Pembayaran Berhasil</p>
-                <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">Plan {active.TARGET_PLAN} sudah aktif otomatis.</p>
-              </div>
+                <div id={SNAP_EMBED_ID} className="min-h-[520px] w-full overflow-hidden rounded-2xl border border-brand-100 bg-white" />
+              </>
             ) : (
-              <div className="rounded-2xl bg-rose-50 p-5 text-center text-sm text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">Pembayaran {statusLabel[active.STATUS]}.</div>
+              <>
+                <div className="rounded-2xl bg-primary p-4 text-center text-white">
+                  <p className="text-xs uppercase tracking-wider text-brand-100">Total Pembayaran</p>
+                  <p className="mt-1 text-3xl font-bold">{formatRupiah(active.TOTAL_BAYAR)}</p>
+                  <p className="mt-1 text-xs text-brand-100">{active.TARGET_PLAN} · {active.PAKET}</p>
+                </div>
+                {active.STATUS === 'PAID' ? (
+                  <div className="rounded-2xl bg-emerald-50 p-6 text-center dark:bg-emerald-500/15">
+                    <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500" />
+                    <p className="mt-2 font-bold text-emerald-800 dark:text-emerald-300">Pembayaran Berhasil</p>
+                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-300">Plan {active.TARGET_PLAN} sudah aktif otomatis.</p>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-rose-50 p-5 text-center text-sm text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">Pembayaran {statusLabel[active.STATUS]}.</div>
+                )}
+              </>
             )}
           </div>
         )}

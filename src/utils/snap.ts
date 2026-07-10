@@ -28,11 +28,21 @@ export interface SnapCallbacks {
   onClose?: () => void;
 }
 
+// snap.js menyimpan state internal sendiri di window.snap (FSM Popup/Embed) yang tidak
+// otomatis reset antar pemanggilan dalam tab yang sama (termasuk lintas hot-reload saat
+// dev). hide() mengembalikannya ke idle dulu supaya embed()/pay() berikutnya tidak kena
+// "Invalid state transition".
+function resetSnap() {
+  (window as any).snap.hide?.();
+}
+
 export function snapPay(token: string, callbacks: SnapCallbacks = {}) {
+  resetSnap();
   (window as any).snap.pay(token, callbacks);
 }
 
 // Render Snap langsung di dalam elemen halaman (id=embedId) alih-alih popup/tab baru.
 export function embedSnap(token: string, embedId: string, callbacks: SnapCallbacks = {}) {
+  resetSnap();
   (window as any).snap.embed(token, { embedId, ...callbacks });
 }
