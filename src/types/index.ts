@@ -46,16 +46,18 @@ export interface Merchant {
 // ===== Payment gateway (Midtrans QRIS dinamis) - khusus BUSINESS =====
 export type PaymentStatus = 'UNPAID' | 'PENDING' | 'PAID' | 'EXPIRED' | 'CANCELLED' | 'FAILED';
 
-export interface MidtransQrisResult {
+export interface MidtransSnapResult {
   transaction_id: number;
   no_nota: string;
   order_id: string;
   provider: string;
   payment_status: PaymentStatus;
   gross_amount: number;
-  qr_string: string | null;
-  qr_url: string | null;
-  expiry_time: string | null;
+  snap_token: string;
+  redirect_url: string | null;
+  client_key: string;
+  is_production: boolean;
+  expiry_minutes: number;
 }
 
 export interface PaymentStatusResult {
@@ -119,8 +121,10 @@ export interface SubscriptionPayment {
   GATEWAY_MERCHANT_ID?: string | null;
   MIDTRANS_ORDER_ID?: string | null;
   MIDTRANS_TRANSACTION_ID?: string | null;
-  QR_STRING?: string | null;
-  QR_URL?: string | null;
+  SNAP_TOKEN?: string | null;
+  SNAP_REDIRECT_URL?: string | null;
+  MIDTRANS_CLIENT_KEY?: string | null;
+  MIDTRANS_IS_PRODUCTION?: boolean;
   REJECT_REASON?: string | null;
   EXPIRES_AT?: string | null;
   PAID_AT?: string | null;
@@ -136,6 +140,8 @@ export interface Billing {
   status_toko: string | null;
   payments: SubscriptionPayment[];
   latest: SubscriptionPayment | null;
+  midtrans_client_key: string | null;
+  midtrans_is_production: boolean;
 }
 
 export interface RevenueByPlan {

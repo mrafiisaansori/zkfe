@@ -7,6 +7,7 @@ import { Card, CardBody, Button, Modal, Badge, DataTable, type Column } from '@/
 import { subscriptionService, authService, getErrorMessage } from '@/services';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/utils/cn';
+import { loadSnap, snapPay } from '@/utils/snap';
 import type { Billing, SubscriptionSetting, SubscriptionPayment, SubscriptionPaket, SubscriptionStatus, PlanType } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { formatRupiah, formatDateTime } from '@/utils/format';
@@ -104,6 +105,18 @@ export default function LanggananPage() {
     return () => window.clearInterval(timer);
   }, [payOpen, active?.STATUS]);
 
+  // Buka popup Snap Midtrans (dipanggil saat transaksi dibuat & saat tombol "buka kembali").
+  async function openSnapPopup(payment: SubscriptionPayment) {
+    if (!payment.SNAP_TOKEN || !payment.MIDTRANS_CLIENT_KEY) return;
+    try {
+      await loadSnap(payment.MIDTRANS_CLIENT_KEY, !!payment.MIDTRANS_IS_PRODUCTION);
+      snapPay(payment.SNAP_TOKEN, {
+        onSuccess: () => load(),
+        onPending: () => load(),
+      });
+    } catch (error) { toast.error(getErrorMessage(error)); }
+  }
+
   async function createPayment() {
     if (targetPlan === 'BUSINESS') {
       setBusinessContactOpen(true);
@@ -113,7 +126,7 @@ export default function LanggananPage() {
     try {
       const payment = await subscriptionService.createPayment(targetPlan, paket);
       setActive(payment); setPayOpen(true); setNow(Date.now());
-      toast.success('QRIS berhasil dibuat, silakan scan untuk membayar');
+      openSnapPopup(payment);
       await load(); setActive(payment);
     } catch (error) { toast.error(getErrorMessage(error)); await load(); }
     finally { setCreating(false); }
@@ -134,13 +147,13 @@ export default function LanggananPage() {
     { header: 'Nominal', accessor: (row) => <span className="font-semibold">{formatRupiah(row.TOTAL_BAYAR)}</span> },
     { header: 'Status', accessor: (row) => <Badge tone={statusTone[row.STATUS]} dot>{statusLabel[row.STATUS]}</Badge> },
     { header: '', accessor: (row) => row.STATUS === 'PENDING'
-      ? <Button size="sm" variant="outline" onClick={() => { setActive(row); setPayOpen(true); }}>Tampilkan QRIS</Button>
+      ? <Button size="sm" variant="outline" onClick={() => { setActive(row); setPayOpen(true); }}>Bayar</Button>
       : null },
   ];
 
   return (
     <div>
-      <PageHeader title="Langganan / Billing" description="Kelola paket tokomu. Pembayaran cukup scan QRIS, langsung aktif otomatis." />
+      <PageHeader title="Langganan / Billing" description="Kelola paket tokomu. Bayar via GoPay, QRIS, atau transfer VA bank, langsung aktif otomatis." />
 
       <div className="mb-5 grid gap-4 sm:grid-cols-3">
         <Card><CardBody>
@@ -181,7 +194,7 @@ export default function LanggananPage() {
       <Card><CardBody>
         <div className="mb-4">
           <p className="font-semibold text-slate-800">Pilih Paket</p>
-          <p className="text-sm text-slate-500">Bayar sekali pakai QRIS, plan aktif otomatis begitu pembayaran diterima.</p>
+          <p className="text-sm text-slate-500">Bayar sekali via Payment Gateway, plan aktif otomatis begitu pembayaran diterima.</p>
         </div>
 
         <div className="mb-4 inline-flex rounded-xl border border-line bg-canvas p-1">
@@ -230,7 +243,7 @@ export default function LanggananPage() {
               })}
             </div>
             <Button onClick={createPayment} loading={creating} disabled={!!active && active.STATUS === 'PENDING'} size="lg">
-              <CreditCard className="h-4 w-4" /> Bayar {formatRupiah(selectedPrice || 0)} via QRIS
+              <CreditCard className="h-4 w-4" /> Bayar {formatRupiah(selectedPrice || 0)}
             </Button>
           </>
         ) : (
@@ -257,13 +270,13 @@ export default function LanggananPage() {
               <p className="mt-1 text-xs text-brand-100">{active.TARGET_PLAN} · {active.PAKET}</p>
             </div>
 
-            {active.STATUS === 'PENDING' && active.QR_URL ? (
+            {active.STATUS === 'PENDING' && active.SNAP_TOKEN ? (
               <div className="space-y-3 text-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={active.QR_URL} alt="QRIS pembayaran upgrade plan" loading="lazy" decoding="async" className="mx-auto h-60 w-60 rounded-2xl border object-contain bg-[#fff]" />
-                <div className="flex items-start gap-2 rounded-xl bg-brand-50 px-3 py-2 text-left text-xs leading-5 text-slate-600">
-                  <ScanLine className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                  <span>Scan menggunakan aplikasi yang mendukung QRIS seperti GoPay, OVO, DANA, ShopeePay, LinkAja, atau mobile banking.</span>
+                <div className="rounded-2xl border border-brand-100 bg-white p-5">
+                  <ScanLine className="mx-auto h-9 w-9 text-primary" />
+                  <p className="mt-2 text-sm font-semibold text-slate-800">Selesaikan pembayaran di jendela Payment Gateway</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">GoPay, QRIS, transfer VA bank, atau kartu - sesuai channel yang aktif.</p>
+                  <Button variant="outline" className="mt-3 w-full" onClick={() => openSnapPopup(active)}>Buka Jendela Pembayaran</Button>
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div className="rounded-xl bg-amber-50 px-3 py-2 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"><Loader2 className="mr-1 inline h-3.5 w-3.5 animate-spin" /> Menunggu Pembayaran</div>

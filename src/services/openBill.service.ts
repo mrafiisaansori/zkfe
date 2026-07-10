@@ -1,5 +1,5 @@
 import { get, getWithMeta, post, put, type ApiDataWithMeta, type PaginationMeta } from './api';
-import type { OpenBill, OpenBillStatus, CheckoutResult, MidtransQrisResult } from '@/types';
+import type { OpenBill, OpenBillStatus, CheckoutResult, MidtransSnapResult } from '@/types';
 
 export interface OpenBillItemInput {
   id_produk: number;
@@ -50,6 +50,6 @@ export const openBillService = {
   payPartial: (id: number, data: OpenBillPartialPayInput) =>
     post<CheckoutResult & { no_bill: string; split_no: number; payer_name: string; bill_status: OpenBillStatus; remaining_total: number }>(`/open-bill/${id}/pay-partial`, data),
   createPartialQris: (id: number, data: OpenBillPartialQrisInput) =>
-    post<MidtransQrisResult>(`/open-bill/${id}/pay-partial/qris/create`, data),
+    post<MidtransSnapResult>(`/open-bill/${id}/pay-partial/qris/create`, data),
   cancel: (id: number) => post(`/open-bill/${id}/cancel`),
 };

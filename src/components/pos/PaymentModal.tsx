@@ -5,7 +5,8 @@ import toast from 'react-hot-toast';
 import { Modal, Button, SelectMenu, Input, CurrencyInput, UpgradeModal } from '@/components/ui';
 import { formatRupiah } from '@/utils/format';
 import { voucherService, getErrorMessage } from '@/services';
-import type { JenisBayar, Qris, TaxSetting, PlanType, MidtransQrisResult, PaymentStatusResult } from '@/types';
+import { loadSnap, snapPay } from '@/utils/snap';
+import type { JenisBayar, Qris, TaxSetting, PlanType, MidtransSnapResult, PaymentStatusResult } from '@/types';
 
 interface ConfirmData { id_jenis_bayar: number; bayar: number; keterangan?: string; kode_voucher?: string }
 
@@ -19,8 +20,8 @@ interface Props {
   loading?: boolean;
   plan?: PlanType;
   onConfirm: (data: ConfirmData) => void;
-  // ===== Midtrans QRIS dinamis (khusus BUSINESS) =====
-  onCreateMidtrans?: (opts: { keterangan?: string; kode_voucher?: string }) => Promise<MidtransQrisResult>;
+  // ===== Midtrans Snap (khusus BUSINESS) =====
+  onCreateMidtrans?: (opts: { keterangan?: string; kode_voucher?: string }) => Promise<MidtransSnapResult>;
   onPollMidtrans?: (transactionId: number) => Promise<PaymentStatusResult>;
   onMidtransSuccess?: (transactionId: number) => void;
 }
@@ -46,7 +47,8 @@ export function PaymentModal({
 
   // ===== State Midtrans =====
   const [mtPhase, setMtPhase] = useState<'idle' | 'creating' | 'waiting' | 'paid' | 'failed'>('idle');
-  const [mtData, setMtData] = useState<MidtransQrisResult | null>(null);
+  const [mtData, setMtData] = useState<MidtransSnapResult | null>(null);
+  const [mtExpiresAt, setMtExpiresAt] = useState<number | null>(null);
   const [mtMsg, setMtMsg] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -66,7 +68,7 @@ export function PaymentModal({
   useEffect(() => {
     if (!open) {
       setVoucher(null); setVoucherInput('');
-      setMtPhase('idle'); setMtData(null); setMtMsg('');
+      setMtPhase('idle'); setMtData(null); setMtExpiresAt(null); setMtMsg('');
       setCheckingStatus(false); setUpgradeOpen(false);
       stopPolling();
     }
@@ -132,14 +134,30 @@ export function PaymentModal({
     }
   }
 
+  // Buka popup Snap Midtrans (dipanggil saat transaksi dibuat & saat tombol "buka kembali").
+  async function openSnapPopup(data: MidtransSnapResult) {
+    try {
+      await loadSnap(data.client_key, data.is_production);
+      snapPay(data.snap_token, {
+        onSuccess: () => checkMidtransStatus(data.transaction_id, true),
+        onPending: () => checkMidtransStatus(data.transaction_id, true),
+        onError: () => { setMtPhase('failed'); setMtMsg('Pembayaran gagal di Payment Gateway.'); },
+      });
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  }
+
   async function startMidtrans() {
     if (!onCreateMidtrans) return;
     setMtPhase('creating'); setMtMsg('');
     try {
       const res = await onCreateMidtrans({ keterangan: keterangan || 'Pembayaran QRIS Midtrans', kode_voucher: voucher?.kode });
       setMtData(res);
+      setMtExpiresAt(Date.now() + res.expiry_minutes * 60000);
       setMtPhase('waiting');
-      // Mulai polling status tiap 3 detik.
+      openSnapPopup(res);
+      // Mulai polling status tiap 3 detik (jaring pengaman selain webhook & callback Snap).
       stopPolling();
       pollRef.current = setInterval(async () => {
         await checkMidtransStatus(res.transaction_id);
@@ -154,7 +172,7 @@ export function PaymentModal({
       value: j.ID as number | string,
       label: isQrisName(j.NAMA) ? 'QRIS Manual' : j.NAMA,
     })),
-    ...(isBusiness && onCreateMidtrans ? [{ value: MIDTRANS, label: 'QRIS Payment Gateway' }] : []),
+    ...(isBusiness && onCreateMidtrans ? [{ value: MIDTRANS, label: 'Payment Gateway' }] : []),
   ];
 
   let footer: React.ReactNode;
@@ -166,12 +184,12 @@ export function PaymentModal({
         </Button>
         {mtPhase === 'idle' && (
           <Button variant="gradient" className="bg-primary hover:bg-brand-700" onClick={startMidtrans}>
-            <Zap className="h-4 w-4" /> Buat QRIS
+            <Zap className="h-4 w-4" /> Bayar
           </Button>
         )}
         {mtPhase === 'failed' && (
           <Button variant="gradient" className="bg-primary hover:bg-brand-700" onClick={startMidtrans}>
-            <Zap className="h-4 w-4" /> Buat Ulang QRIS
+            <Zap className="h-4 w-4" /> Coba Lagi
           </Button>
         )}
       </>
@@ -257,10 +275,12 @@ export function PaymentModal({
           <MidtransPanel
             phase={mtPhase}
             data={mtData}
+            expiresAt={mtExpiresAt}
             msg={mtMsg}
             total={total}
             checkingStatus={checkingStatus}
             onCheckStatus={() => mtData && checkMidtransStatus(mtData.transaction_id, true)}
+            onReopen={() => mtData && openSnapPopup(mtData)}
           />
         ) : isQris ? (
           // ===== Mode QRIS statis merchant =====
@@ -342,27 +362,28 @@ export function PaymentModal({
   );
 }
 
-// Panel khusus QRIS dinamis Midtrans (idle/creating/waiting/paid/failed).
-function MidtransPanel({ phase, data, msg, total, checkingStatus, onCheckStatus }: {
+// Panel khusus Payment Gateway Snap Midtrans (idle/creating/waiting/paid/failed).
+function MidtransPanel({
+  phase, data, expiresAt, msg, total, checkingStatus, onCheckStatus, onReopen,
+}: {
   phase: 'idle' | 'creating' | 'waiting' | 'paid' | 'failed';
-  data: MidtransQrisResult | null;
+  data: MidtransSnapResult | null;
+  expiresAt: number | null;
   msg: string;
   total: number;
   checkingStatus: boolean;
   onCheckStatus: () => void;
+  onReopen: () => void;
 }) {
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!data?.expiry_time || phase !== 'waiting') { setRemainingSeconds(null); return undefined; }
-    const raw = data.expiry_time.trim();
-    const expiresAt = Date.parse(raw.includes('T') ? raw : raw.replace(' ', 'T'));
-    if (Number.isNaN(expiresAt)) return undefined;
+    if (!expiresAt || phase !== 'waiting') { setRemainingSeconds(null); return undefined; }
     const tick = () => setRemainingSeconds(Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)));
     tick();
     const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
-  }, [data?.expiry_time, phase]);
+  }, [expiresAt, phase]);
 
   const timerLabel = remainingSeconds == null
     ? null
@@ -372,10 +393,10 @@ function MidtransPanel({ phase, data, msg, total, checkingStatus, onCheckStatus 
     return (
       <div className="flex flex-col items-center gap-2 rounded-2xl border border-brand-100 bg-brand-50/60 p-5 text-center">
         <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-white"><Zap className="h-6 w-6" /></span>
-        <p className="text-sm font-semibold text-slate-800">QRIS Payment Gateway</p>
-        <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary">QRIS Dinamis · BUSINESS</span>
+        <p className="text-sm font-semibold text-slate-800">Payment Gateway</p>
+        <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary">GoPay · QRIS · VA Bank · BUSINESS</span>
         <p className="text-xs text-slate-600">
-          Tekan <b>Buat QRIS</b> untuk menghasilkan kode QR sesuai nominal {formatRupiah(total)}.
+          Tekan <b>Bayar</b> untuk membuka jendela pembayaran sesuai nominal {formatRupiah(total)}.
           Status pembayaran akan diperbarui otomatis.
         </p>
       </div>
@@ -385,7 +406,7 @@ function MidtransPanel({ phase, data, msg, total, checkingStatus, onCheckStatus 
     return (
       <div className="flex flex-col items-center gap-3 rounded-2xl border border-slate-200 bg-white p-8 text-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-slate-600">Membuat QRIS Midtrans...</p>
+        <p className="text-sm text-slate-600">Menyiapkan Payment Gateway...</p>
       </div>
     );
   }
@@ -403,7 +424,7 @@ function MidtransPanel({ phase, data, msg, total, checkingStatus, onCheckStatus 
       <div className="flex flex-col items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 p-6 text-center dark:border-rose-500/30 dark:bg-rose-500/10">
         <AlertTriangle className="h-10 w-10 text-rose-500" />
         <p className="text-sm font-medium text-rose-800 dark:text-rose-300">Pembayaran belum selesai</p>
-        <p className="text-xs text-rose-700 dark:text-rose-300">{msg || 'Terjadi kendala. Silakan buat ulang QRIS.'}</p>
+        <p className="text-xs text-rose-700 dark:text-rose-300">{msg || 'Terjadi kendala. Silakan coba lagi.'}</p>
       </div>
     );
   }
@@ -413,7 +434,7 @@ function MidtransPanel({ phase, data, msg, total, checkingStatus, onCheckStatus 
       <div className="rounded-2xl border border-brand-100 bg-brand-50/50 p-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-primary">QRIS Dinamis</p>
+            <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Payment Gateway</p>
             <p className="text-lg font-bold text-slate-900">{formatRupiah(data?.gross_amount || total)}</p>
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
@@ -422,25 +443,18 @@ function MidtransPanel({ phase, data, msg, total, checkingStatus, onCheckStatus 
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-brand-100 bg-white p-4 shadow-sm">
-        {data?.qr_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={data.qr_url} alt="QRIS dinamis untuk pembayaran" loading="lazy" decoding="async" className="h-60 w-60 max-w-full rounded-xl border border-slate-100 object-contain" />
-        ) : (
-          <div className="flex h-60 w-60 items-center justify-center rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
-            QR tidak tersedia
-          </div>
-        )}
-        <div className="flex items-start gap-2 text-center text-xs leading-5 text-slate-600">
-          <ScanLine className="h-4 w-4 flex-shrink-0" />
-          <span>Scan QRIS ini menggunakan aplikasi pembayaran favorit Anda seperti GoPay, OVO, DANA, ShopeePay, LinkAja, atau mobile banking.</span>
-        </div>
-        <div className="flex flex-wrap justify-center gap-1.5" aria-label="Aplikasi pembayaran yang mendukung QRIS">
-          {['GoPay', 'OVO', 'DANA', 'ShopeePay', 'LinkAja', 'Mobile Banking'].map((name) => (
-            <span key={name} className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] font-semibold text-slate-600">{name}</span>
-          ))}
-        </div>
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-brand-100 bg-white p-6 text-center shadow-sm">
+        <ScanLine className="h-10 w-10 text-primary" />
+        <p className="text-sm font-semibold text-slate-800">Jendela pembayaran sudah dibuka</p>
+        <p className="text-xs leading-5 text-slate-600">
+          Selesaikan pembayaran di jendela Payment Gateway (GoPay, QRIS, transfer VA bank, atau kartu).
+          Kalau jendelanya tertutup atau ke-block browser, buka lagi lewat tombol di bawah.
+        </p>
+        <Button variant="outline" className="w-full" onClick={onReopen}>
+          Buka Kembali Jendela Pembayaran
+        </Button>
       </div>
+
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-slate-600">
           <ShieldCheck className="h-4 w-4 text-emerald-600" /> Status otomatis

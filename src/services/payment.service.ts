@@ -1,5 +1,5 @@
 import { get, post } from './api';
-import type { MidtransQrisResult, PaymentStatusResult } from '@/types';
+import type { MidtransSnapResult, PaymentStatusResult } from '@/types';
 
 export interface CreateQrisInput {
   items: { id_produk: number; qty: number; modifier_option_ids?: number[] }[];
@@ -14,9 +14,9 @@ export interface CreateQrisInput {
 // Payment gateway Midtrans (QRIS dinamis) - hanya untuk merchant plan BUSINESS.
 // Backend memvalidasi plan; merchant_id selalu dari token login (bukan frontend).
 export const paymentService = {
-  // Buat transaksi + QRIS dinamis. Mengembalikan qr_string/qr_url + order_id.
+  // Buat transaksi Snap Midtrans. Mengembalikan snap_token/client_key + order_id.
   createQris: (data: CreateQrisInput) =>
-    post<MidtransQrisResult>('/payments/midtrans/qris/create', data),
+    post<MidtransSnapResult>('/payments/midtrans/qris/create', data),
 
   // Polling status pembayaran (kasir). PAID = lunas otomatis dari webhook Midtrans.
   status: (transactionId: number) =>

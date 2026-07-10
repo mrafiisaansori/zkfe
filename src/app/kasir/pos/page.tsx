@@ -18,7 +18,7 @@ import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { printReceipt } from '@/utils/printThermal';
 import { buildReceiptEscPos } from '@/utils/escpos';
 import { enqueueSale, buildOfflineDraft, isNetworkError } from '@/utils/offlineQueue';
-import type { Produk, JenisBayar, Kategori, Penjualan, CheckoutResult, Qris, TaxSetting, Identitas, ModifierGroup, ModifierOption, PlanType, MidtransQrisResult } from '@/types';
+import type { Produk, JenisBayar, Kategori, Penjualan, CheckoutResult, Qris, TaxSetting, Identitas, ModifierGroup, ModifierOption, PlanType, MidtransSnapResult } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import type { PaginationMeta } from '@/services/api';
 
@@ -59,7 +59,7 @@ export default function PosPage() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const billCtx = cart.bill;
   const isPro = plan === 'PRO' || plan === 'BUSINESS'; // BUSINESS = superset PRO
-  const [midtransRes, setMidtransRes] = useState<MidtransQrisResult | null>(null);
+  const [midtransRes, setMidtransRes] = useState<MidtransSnapResult | null>(null);
 
   // ===== Sesi kasir (shift) =====
   // null = belum diketahui (loading), true = sesi aktif, false = belum buka.
