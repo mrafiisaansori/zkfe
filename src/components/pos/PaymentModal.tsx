@@ -3,10 +3,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScanLine, AlertTriangle, CheckCircle2, TicketPercent, Zap, Loader2, Clock3, RefreshCw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Modal, Button, SelectMenu, Input, CurrencyInput, UpgradeModal } from '@/components/ui';
-import { formatRupiah } from '@/utils/format';
+import { formatRupiah, formatCountdown } from '@/utils/format';
 import { voucherService, getErrorMessage } from '@/services';
-import { loadSnap, snapPay } from '@/utils/snap';
+import { loadSnap, embedSnap } from '@/utils/snap';
 import type { JenisBayar, Qris, TaxSetting, PlanType, MidtransSnapResult, PaymentStatusResult } from '@/types';
+
+const SNAP_EMBED_ID = 'snap-embed-payment-modal';
 
 interface ConfirmData { id_jenis_bayar: number; bayar: number; keterangan?: string; kode_voucher?: string }
 
@@ -134,19 +136,26 @@ export function PaymentModal({
     }
   }
 
-  // Buka popup Snap Midtrans (dipanggil saat transaksi dibuat & saat tombol "buka kembali").
-  async function openSnapPopup(data: MidtransSnapResult) {
-    try {
-      await loadSnap(data.client_key, data.is_production);
-      snapPay(data.snap_token, {
-        onSuccess: () => checkMidtransStatus(data.transaction_id, true),
-        onPending: () => checkMidtransStatus(data.transaction_id, true),
-        onError: () => { setMtPhase('failed'); setMtMsg('Pembayaran gagal di Payment Gateway.'); },
-      });
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
-  }
+  // Render Snap langsung di dalam modal (embed) begitu transaksi dibuat & container-nya termuat.
+  useEffect(() => {
+    if (mtPhase !== 'waiting' || !mtData) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await loadSnap(mtData.client_key, mtData.is_production);
+        if (cancelled) return;
+        embedSnap(mtData.snap_token, SNAP_EMBED_ID, {
+          onSuccess: () => checkMidtransStatus(mtData.transaction_id, true),
+          onPending: () => checkMidtransStatus(mtData.transaction_id, true),
+          onError: () => { setMtPhase('failed'); setMtMsg('Pembayaran gagal di Payment Gateway.'); },
+        });
+      } catch (err) {
+        if (!cancelled) { setMtPhase('failed'); setMtMsg(getErrorMessage(err)); }
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mtPhase, mtData]);
 
   async function startMidtrans() {
     if (!onCreateMidtrans) return;
@@ -156,7 +165,6 @@ export function PaymentModal({
       setMtData(res);
       setMtExpiresAt(Date.now() + res.expiry_minutes * 60000);
       setMtPhase('waiting');
-      openSnapPopup(res);
       // Mulai polling status tiap 3 detik (jaring pengaman selain webhook & callback Snap).
       stopPolling();
       pollRef.current = setInterval(async () => {
@@ -216,7 +224,7 @@ export function PaymentModal({
 
   return (
     <>
-    <Modal open={open} onClose={onClose} title="Pembayaran" size="sm" footer={footer}>
+    <Modal open={open} onClose={onClose} title="Pembayaran" size={isMidtrans && mtPhase === 'waiting' ? 'md' : 'sm'} footer={footer}>
       <div className="space-y-4">
         <div className="rounded-2xl bg-gradient-to-br from-ink via-primary to-accent p-5 text-center text-white">
           <p className="text-xs font-medium uppercase tracking-wider text-brand-100">Total Bayar</p>
@@ -280,7 +288,6 @@ export function PaymentModal({
             total={total}
             checkingStatus={checkingStatus}
             onCheckStatus={() => mtData && checkMidtransStatus(mtData.transaction_id, true)}
-            onReopen={() => mtData && openSnapPopup(mtData)}
           />
         ) : isQris ? (
           // ===== Mode QRIS statis merchant =====
@@ -364,7 +371,7 @@ export function PaymentModal({
 
 // Panel khusus Payment Gateway Snap Midtrans (idle/creating/waiting/paid/failed).
 function MidtransPanel({
-  phase, data, expiresAt, msg, total, checkingStatus, onCheckStatus, onReopen,
+  phase, data, expiresAt, msg, total, checkingStatus, onCheckStatus,
 }: {
   phase: 'idle' | 'creating' | 'waiting' | 'paid' | 'failed';
   data: MidtransSnapResult | null;
@@ -373,7 +380,6 @@ function MidtransPanel({
   total: number;
   checkingStatus: boolean;
   onCheckStatus: () => void;
-  onReopen: () => void;
 }) {
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
 
@@ -385,9 +391,7 @@ function MidtransPanel({
     return () => window.clearInterval(timer);
   }, [expiresAt, phase]);
 
-  const timerLabel = remainingSeconds == null
-    ? null
-    : `${String(Math.floor(remainingSeconds / 60)).padStart(2, '0')}:${String(remainingSeconds % 60).padStart(2, '0')}`;
+  const timerLabel = remainingSeconds == null ? null : formatCountdown(remainingSeconds);
 
   if (phase === 'idle') {
     return (
@@ -396,7 +400,7 @@ function MidtransPanel({
         <p className="text-sm font-semibold text-slate-800">Payment Gateway</p>
         <span className="rounded-full bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-primary">GoPay · QRIS · VA Bank · BUSINESS</span>
         <p className="text-xs text-slate-600">
-          Tekan <b>Bayar</b> untuk membuka jendela pembayaran sesuai nominal {formatRupiah(total)}.
+          Tekan <b>Bayar</b> untuk menampilkan opsi pembayaran sesuai nominal {formatRupiah(total)}.
           Status pembayaran akan diperbarui otomatis.
         </p>
       </div>
@@ -443,17 +447,7 @@ function MidtransPanel({
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-brand-100 bg-white p-6 text-center shadow-sm">
-        <ScanLine className="h-10 w-10 text-primary" />
-        <p className="text-sm font-semibold text-slate-800">Jendela pembayaran sudah dibuka</p>
-        <p className="text-xs leading-5 text-slate-600">
-          Selesaikan pembayaran di jendela Payment Gateway (GoPay, QRIS, transfer VA bank, atau kartu).
-          Kalau jendelanya tertutup atau ke-block browser, buka lagi lewat tombol di bawah.
-        </p>
-        <Button variant="outline" className="w-full" onClick={onReopen}>
-          Buka Kembali Jendela Pembayaran
-        </Button>
-      </div>
+      <div id={SNAP_EMBED_ID} className="min-h-[560px] w-full overflow-hidden rounded-2xl border border-brand-100 bg-white" />
 
       <div className="grid grid-cols-2 gap-2 text-xs">
         <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2.5 text-slate-600">

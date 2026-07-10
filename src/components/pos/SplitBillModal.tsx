@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Minus, Plus, ReceiptText, RefreshCw, ScanLine, Users, Zap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Minus, Plus, ReceiptText, RefreshCw, Users, Zap } from 'lucide-react';
 import { Modal, Button, Input, CurrencyInput, SelectMenu } from '@/components/ui';
 import { cn } from '@/utils/cn';
 import { formatRupiah } from '@/utils/format';
-import { loadSnap, snapPay } from '@/utils/snap';
+import { loadSnap, embedSnap } from '@/utils/snap';
 import type { CartItem, JenisBayar, MidtransSnapResult, PaymentStatusResult, PlanType, Qris, TaxSetting } from '@/types';
 
 const MIDTRANS = 'MIDTRANS' as const;
+const SNAP_EMBED_ID = 'snap-embed-splitbill';
 type PaymentMethod = number | typeof MIDTRANS;
 
 interface OpenBillSelection {
@@ -275,19 +276,26 @@ export function SplitBillModal({
     }
   }
 
-  // Buka popup Snap Midtrans (dipanggil saat transaksi dibuat & saat tombol "buka kembali").
-  async function openSnapPopup(resData: MidtransSnapResult, payload: SplitConfirmData) {
-    try {
-      await loadSnap(resData.client_key, resData.is_production);
-      snapPay(resData.snap_token, {
-        onSuccess: () => checkMidtrans(resData.transaction_id, payload, true),
-        onPending: () => checkMidtrans(resData.transaction_id, payload, true),
-        onError: () => { setMtPhase('failed'); setMtMsg('Pembayaran gagal di Payment Gateway.'); },
-      });
-    } catch (err) {
-      setMtMsg(err instanceof Error ? err.message : 'Gagal membuka Payment Gateway.');
-    }
-  }
+  // Render Snap langsung di dalam panel (embed) begitu transaksi dibuat & container-nya termuat.
+  useEffect(() => {
+    if (mtPhase !== 'waiting' || !mtData || !mtPayload) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await loadSnap(mtData.client_key, mtData.is_production);
+        if (cancelled) return;
+        embedSnap(mtData.snap_token, SNAP_EMBED_ID, {
+          onSuccess: () => checkMidtrans(mtData.transaction_id, mtPayload, true),
+          onPending: () => checkMidtrans(mtData.transaction_id, mtPayload, true),
+          onError: () => { setMtPhase('failed'); setMtMsg('Pembayaran gagal di Payment Gateway.'); },
+        });
+      } catch (err) {
+        if (!cancelled) setMtMsg(err instanceof Error ? err.message : 'Gagal memuat Payment Gateway.');
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mtPhase, mtData, mtPayload]);
 
   async function startMidtrans() {
     if (!onCreateMidtrans || !activeData || activeData.chips.length === 0) return;
@@ -300,7 +308,6 @@ export function SplitBillModal({
       setMtData(res);
       setMtPayload(payload);
       setMtPhase('waiting');
-      openSnapPopup(res, payload);
       stopPolling();
       pollRef.current = setInterval(() => { checkMidtrans(res.transaction_id, payload); }, 3000);
     } catch (err) {
@@ -392,7 +399,6 @@ export function SplitBillModal({
                     msg={mtMsg}
                     checkingStatus={checkingStatus}
                     onCreate={startMidtrans}
-                    onReopen={() => mtData && mtPayload && openSnapPopup(mtData, mtPayload)}
                     onCheck={() => { if (mtData && mtPayload) checkMidtrans(mtData.transaction_id, mtPayload, true); }}
                   />
                 ) : isQrisManual ? (
@@ -437,12 +443,11 @@ export function SplitBillModal({
   );
 }
 
-function MidtransPanel({ phase, msg, checkingStatus, onCreate, onReopen, onCheck }: {
+function MidtransPanel({ phase, msg, checkingStatus, onCreate, onCheck }: {
   phase: 'idle' | 'creating' | 'waiting' | 'paid' | 'failed';
   msg: string;
   checkingStatus: boolean;
   onCreate: () => void;
-  onReopen: () => void;
   onCheck: () => void;
 }) {
   if (phase === 'idle') {
@@ -459,12 +464,7 @@ function MidtransPanel({ phase, msg, checkingStatus, onCreate, onReopen, onCheck
   }
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-brand-100 bg-white p-4 text-center">
-        <ScanLine className="mx-auto h-8 w-8 text-primary" />
-        <p className="mt-2 text-sm font-semibold text-slate-800">Jendela pembayaran sudah dibuka</p>
-        <p className="mt-1 text-xs text-slate-500">Selesaikan di jendela Payment Gateway (GoPay, QRIS, VA bank, dll).</p>
-        <Button variant="outline" className="mt-3 w-full" onClick={onReopen}>Buka Kembali</Button>
-      </div>
+      <div id={SNAP_EMBED_ID} className="min-h-[520px] w-full overflow-hidden rounded-2xl border border-brand-100 bg-white" />
       <Button variant="outline" className="w-full" onClick={onCheck} loading={checkingStatus}><RefreshCw className="h-4 w-4" /> Cek Status Pembayaran</Button>
     </div>
   );

@@ -24,6 +24,15 @@ export function formatDateTime(value?: string | null): string {
   return `${formatDate(value)} pukul ${jam}:${menit}`;
 }
 
+// Countdown ramah-baca: >=1 jam -> "23j 55m", di bawah itu -> "05:28".
+export function formatCountdown(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  if (h > 0) return `${h}j ${String(m).padStart(2, '0')}m`;
+  return `${String(m).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
 // Zona waktu aplikasi (WIB / Asia/Jakarta).
 const APP_TZ = 'Asia/Jakarta';
 

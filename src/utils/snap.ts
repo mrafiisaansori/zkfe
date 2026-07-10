@@ -31,3 +31,8 @@ export interface SnapCallbacks {
 export function snapPay(token: string, callbacks: SnapCallbacks = {}) {
   (window as any).snap.pay(token, callbacks);
 }
+
+// Render Snap langsung di dalam elemen halaman (id=embedId) alih-alih popup/tab baru.
+export function embedSnap(token: string, embedId: string, callbacks: SnapCallbacks = {}) {
+  (window as any).snap.embed(token, { embedId, ...callbacks });
+}
