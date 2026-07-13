@@ -70,6 +70,7 @@ export const NAV_TREE: NavNode[] = [
   { label: 'Pembayaran Langganan', href: '/superadmin/langganan', icon: CreditCard, roles: ['superadmin'] },
   { label: 'Laporan Pendapatan', href: '/superadmin/laporan', icon: TrendingUp, roles: ['superadmin'] },
   { label: 'Harga Plan', href: '/superadmin/langganan/setting', icon: QrCode, roles: ['superadmin'] },
+  { label: 'Test Midtrans GoPay', href: '/superadmin/midtrans-test', icon: QrCode, roles: ['superadmin'] },
 
   // ===== Kasir =====
   { label: 'Dashboard', href: '/kasir/dashboard', icon: LayoutDashboard, roles: ['kasir'] },

@@ -24,3 +24,4 @@ export * from './supplier.service';
 export * from './pembelian.service';
 export * from './retur.service';
 export * from './wilayah.service';
+export * from './midtransTest.service';
