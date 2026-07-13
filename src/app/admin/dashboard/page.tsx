@@ -4,6 +4,7 @@ import { AlertTriangle, Package, Receipt, ShoppingBag, TrendingUp, Star } from '
 import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { UpgradeBanner } from '@/components/layout/UpgradeBanner';
+import { ExpiryWarningBanner } from '@/components/layout/ExpiryWarningBanner';
 import { StatCard } from '@/components/layout/StatCard';
 import { Card, CardBody, LoadingState, ErrorState, Badge, Skeleton, StatCardSkeleton } from '@/components/ui';
 import { dashboardService, getErrorMessage } from '@/services';
@@ -65,6 +66,7 @@ function FinanceDashboard() {
   return (
     <div>
       <PageHeader title="Dashboard" description={`Ringkasan operasional toko · ${formatDate(summary.tanggal)}`} />
+      <ExpiryWarningBanner />
       <UpgradeBanner />
       {/* Headline: omzet bersih, transaksi, laba kotor, stok menipis */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

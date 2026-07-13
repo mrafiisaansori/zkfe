@@ -27,17 +27,21 @@ export default function VoucherPage() {
   const [busy, setBusy] = useState(false);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
+  // Voucher yang SUDAH ADA tetap kelihatan & bisa dikelola di semua plan
+  // (termasuk setelah PRO turun ke FREE) - cuma bikin voucher BARU yang PRO-only.
   const load = useCallback(async () => {
-    if (!user || !isPro) { setLoading(false); return; }
+    if (!user) { setLoading(false); return; }
     setLoading(true);
     try { setData((await voucherService.list()) || []); }
     catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
-  }, [user, isPro]);
+  }, [user]);
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { if (user && !isPro) setUpgradeOpen(true); }, [user, isPro]);
 
-  function openCreate() { setEditing(null); setForm(empty); setFormOpen(true); }
+  function openCreate() {
+    if (!isPro) { setUpgradeOpen(true); return; }
+    setEditing(null); setForm(empty); setFormOpen(true);
+  }
   function openEdit(v: Voucher) {
     setEditing(v);
     setForm({ kode: v.KODE, tipe: v.TIPE, nilai: v.NILAI, min_transaksi: v.MIN_TRANSAKSI, valid_from: v.VALID_FROM || '', valid_until: v.VALID_UNTIL || '', is_active: v.IS_ACTIVE });
@@ -77,16 +81,15 @@ export default function VoucherPage() {
   return (
     <div>
       <PageHeader title="Voucher / Promo" description="Kode diskon yang bisa dipakai kasir saat checkout."
-        action={isPro ? <Button onClick={openCreate}><Plus className="h-4 w-4" /> Tambah</Button> : undefined} />
-      {isPro ? (
-        <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
-      ) : (
-        <Card><CardBody className="py-10 text-center">
-          <p className="font-semibold text-slate-800">Voucher dan promo tersedia mulai paket PRO.</p>
+        action={<Button onClick={openCreate}><Plus className="h-4 w-4" /> Tambah</Button>} />
+      {!isPro && data.length === 0 && !loading && (
+        <Card className="mb-4"><CardBody className="py-8 text-center">
+          <p className="font-semibold text-slate-800">Bikin voucher baru tersedia mulai paket PRO.</p>
           <p className="mx-auto mt-2 max-w-xl text-sm text-slate-500">Kelola kode promo, periode berlaku, dan minimal transaksi dengan kontrol yang lebih profesional.</p>
           <Button className="mt-5" onClick={() => setUpgradeOpen(true)}>Upgrade ke PRO</Button>
         </CardBody></Card>
       )}
+      <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
 
       <Modal open={formOpen} onClose={() => setFormOpen(false)} title={editing ? 'Edit Voucher' : 'Tambah Voucher'} size="sm"
         footer={<><Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>Batal</Button><Button onClick={save} loading={saving}>Simpan</Button></>}>
@@ -123,9 +126,9 @@ export default function VoucherPage() {
       <UpgradeModal
         open={upgradeOpen}
         onClose={() => setUpgradeOpen(false)}
-        title="Voucher & Promo tersedia di PRO"
-        description="Fitur Voucher, Pajak, dan Service Charge tersedia untuk paket PRO. Upgrade sekarang untuk mengelola promo dan biaya layanan dengan lebih profesional."
-        benefits={['Buat voucher dan promo', 'Atur pajak dan service charge', 'Struk tanpa branding Zona Kasir']}
+        title="Bikin voucher baru tersedia di PRO"
+        description="Voucher yang sudah ada tetap bisa dipakai & dikelola. Upgrade ke PRO untuk bikin kode promo baru, plus pajak dan service charge."
+        benefits={['Buat voucher dan promo baru', 'Atur pajak dan service charge', 'Struk tanpa branding Zona Kasir']}
       />
     </div>
   );

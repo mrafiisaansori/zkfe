@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ShoppingCart, Wallet, Receipt, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { ExpiryWarningBanner } from '@/components/layout/ExpiryWarningBanner';
 import { StatCard } from '@/components/layout/StatCard';
 import { Card, CardBody, Button, DataTable, type Column } from '@/components/ui';
 import { useAuthStore } from '@/stores/authStore';
@@ -44,6 +45,7 @@ export default function KasirDashboard() {
     <div>
       <PageHeader title={`Halo, ${user?.nama ?? 'Kasir'}`} description={`Ringkasan Kasir Hari Ini (${formatDate(todayISO())})`}
         action={<Link href="/kasir/pos"><Button><ShoppingCart className="h-4 w-4" /> Mulai Transaksi</Button></Link>} />
+      <ExpiryWarningBanner />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard label="Penjualan hari ini" value={formatRupiah(total)} icon={Wallet} tone="green" />
         <StatCard label="Transaksi hari ini" value={jumlah} icon={Receipt} tone="brand" />

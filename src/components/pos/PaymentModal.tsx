@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ScanLine, AlertTriangle, CheckCircle2, TicketPercent, Zap, Loader2, Clock3, RefreshCw, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Modal, Button, SelectMenu, Input, CurrencyInput, UpgradeModal } from '@/components/ui';
+import { Modal, Button, SelectMenu, Input, CurrencyInput } from '@/components/ui';
 import { formatRupiah, formatCountdown } from '@/utils/format';
 import { voucherService, getErrorMessage } from '@/services';
 import { loadSnap, embedSnap } from '@/utils/snap';
@@ -44,7 +44,6 @@ export function PaymentModal({
   const [voucherInput, setVoucherInput] = useState('');
   const [voucher, setVoucher] = useState<{ kode: string; diskon: number } | null>(null);
   const [checkingVoucher, setCheckingVoucher] = useState(false);
-  const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
 
   // ===== State Midtrans =====
@@ -71,7 +70,7 @@ export function PaymentModal({
     if (!open) {
       setVoucher(null); setVoucherInput('');
       setMtPhase('idle'); setMtData(null); setMtExpiresAt(null); setMtMsg('');
-      setCheckingStatus(false); setUpgradeOpen(false);
+      setCheckingStatus(false);
       stopPolling();
     }
     return stopPolling;
@@ -94,7 +93,6 @@ export function PaymentModal({
   const qrisAvailable = !!(qris && qris.IS_ACTIVE && qris.IMAGE_URL);
 
   async function applyVoucher() {
-    if (!isPro) { setUpgradeOpen(true); return; }
     const kode = voucherInput.trim();
     if (!kode) return;
     setCheckingVoucher(true);
@@ -228,7 +226,6 @@ export function PaymentModal({
   }
 
   return (
-    <>
     <Modal open={open} onClose={onClose} title="Pembayaran" size={isMidtrans && mtPhase === 'waiting' ? 'md' : 'sm'} footer={footer}>
       <div className="space-y-4">
         <div className="rounded-2xl bg-gradient-to-br from-ink via-primary to-accent p-5 text-center text-white">
@@ -236,8 +233,10 @@ export function PaymentModal({
           <p className="mt-1 text-3xl font-semibold tracking-tight">{formatRupiah(total)}</p>
         </div>
 
-        {/* Voucher (sembunyikan setelah QRIS Midtrans dibuat) */}
-        {isPro && !(isMidtrans && mtPhase !== 'idle') && (
+        {/* Voucher (sembunyikan setelah QRIS Midtrans dibuat). Bikin voucher baru
+            tetap PRO-only (menu Voucher), tapi kode yang sudah ada tetap bisa
+            dipakai di semua plan - termasuk setelah PRO turun ke FREE. */}
+        {!(isMidtrans && mtPhase !== 'idle') && (
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <label className="mb-1 block text-xs font-semibold text-slate-600">Kode voucher</label>
@@ -257,16 +256,6 @@ export function PaymentModal({
               <Button variant="outline" className="h-10" onClick={applyVoucher} loading={checkingVoucher}>Pakai</Button>
             )}
           </div>
-        )}
-        {!isPro && !(isMidtrans && mtPhase !== 'idle') && (
-          <button
-            type="button"
-            onClick={() => setUpgradeOpen(true)}
-            className="flex w-full items-center justify-between rounded-xl border border-brand-100 bg-brand-50/60 px-3 py-2.5 text-left"
-          >
-            <span className="flex items-center gap-2 text-sm font-semibold text-slate-700"><TicketPercent className="h-4 w-4 text-primary" /> Voucher / Promo</span>
-            <span className="rounded-full bg-white px-2 py-1 text-[10px] font-bold text-primary">PRO</span>
-          </button>
         )}
 
         {/* Rincian */}
@@ -362,15 +351,6 @@ export function PaymentModal({
         )}
       </div>
     </Modal>
-    <UpgradeModal
-      open={upgradeOpen}
-      onClose={() => setUpgradeOpen(false)}
-      title="Voucher & Promo tersedia di PRO"
-      description="Fitur Voucher, Pajak, dan Service Charge tersedia untuk paket PRO. Hubungi admin toko untuk melakukan upgrade."
-      benefits={['Voucher dan promo pelanggan', 'Pajak dan service charge', 'Struk tanpa branding Zona Kasir']}
-      showUpgradeButton={false}
-    />
-    </>
   );
 }
 
