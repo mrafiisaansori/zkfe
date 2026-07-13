@@ -65,6 +65,7 @@ export const Turnstile = forwardRef<TurnstileHandle, { onToken: (token: string) 
         if (cancelled || !elRef.current || !window.turnstile || widgetId.current) return;
         widgetId.current = window.turnstile.render(elRef.current, {
           sitekey: SITE_KEY,
+          size: 'flexible', // lebar widget ikut lebar container (samain sama tombol di bawahnya)
           callback: (token: string) => onToken(token),
           'expired-callback': () => onToken(''),
           'error-callback': () => onToken(''),
@@ -95,6 +96,6 @@ export const Turnstile = forwardRef<TurnstileHandle, { onToken: (token: string) 
     // Struktur awal harus identik saat SSR dan hydration. Pada localhost dengan
     // site key production, placeholder tetap dirender tetapi widget tidak dibuat.
     if (!SITE_KEY) return null;
-    return <div ref={elRef} className="my-1 flex justify-center" />;
+    return <div ref={elRef} className="my-1 w-full" />;
   },
 );
