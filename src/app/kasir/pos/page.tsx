@@ -896,21 +896,10 @@ export default function PosPage() {
                 </p>
               )}
             </div>
-            <div className="flex justify-center rounded-xl border border-dashed border-slate-200 py-2">
-              <Receipt
-                ref={receiptThermalRef}
-                trx={success.trx}
-                namaToko={identitas?.NAMA || user?.merchant?.nama}
-                alamatToko={identitas?.ALAMAT || undefined}
-                logoUrl={identitas?.LOGO_URL}
-                bayar={success.result.bayar}
-                plan={plan}
-                size={receiptSize}
-              />
-            </div>
-
+            {/* Ditaruh sebelum preview struk (yang bisa panjang untuk transaksi
+                banyak item) supaya kasir langsung lihat aksi ini tanpa scroll. */}
             {isPro ? (
-              <div className="mt-3 rounded-xl border border-slate-200 p-3">
+              <div className="mb-3 rounded-xl border-2 border-primary/20 bg-primary/5 p-3 dark:border-accent/30 dark:bg-accent/10">
                 <Input
                   label="Kirim struk ke WhatsApp"
                   placeholder="081234567890"
@@ -925,11 +914,24 @@ export default function PosPage() {
             ) : (
               <button
                 onClick={() => setUpgradeOpen(true)}
-                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 p-3 text-sm font-semibold text-slate-500 transition-colors hover:border-primary hover:text-primary"
+                className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 p-3 text-sm font-semibold text-slate-500 transition-colors hover:border-primary hover:text-primary"
               >
                 <MessageCircle className="h-4 w-4" /> Kirim struk ke WhatsApp (fitur PRO)
               </button>
             )}
+
+            <div className="flex justify-center rounded-xl border border-dashed border-slate-200 py-2">
+              <Receipt
+                ref={receiptThermalRef}
+                trx={success.trx}
+                namaToko={identitas?.NAMA || user?.merchant?.nama}
+                alamatToko={identitas?.ALAMAT || undefined}
+                logoUrl={identitas?.LOGO_URL}
+                bayar={success.result.bayar}
+                plan={plan}
+                size={receiptSize}
+              />
+            </div>
           </div>
         )}
       </Modal>
