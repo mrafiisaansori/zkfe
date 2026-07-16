@@ -28,4 +28,5 @@ export const penjualanService = {
   getById: (id: number) => get<Penjualan>(`/penjualan/${id}`),
   checkout: (data: CheckoutInput) => post<CheckoutResult>('/penjualan/checkout', data),
   void: (id: number) => post(`/penjualan/${id}/void`),
+  kirimWA: (id: number, nomor: string) => post<{ terkirim: boolean; nomor: string }>(`/penjualan/${id}/kirim-wa`, { nomor }),
 };

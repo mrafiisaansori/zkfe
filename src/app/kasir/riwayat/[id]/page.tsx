@@ -1,9 +1,9 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Card, CardBody, Button, LoadingState, ErrorState, Badge } from '@/components/ui';
+import { Card, CardBody, Button, LoadingState, ErrorState, Badge, Modal, Input, UpgradeModal } from '@/components/ui';
 import { Receipt, type ReceiptSize } from '@/components/pos/Receipt';
 import { penjualanService, identitasService, getErrorMessage } from '@/services';
 import type { Penjualan, Identitas } from '@/types';
@@ -19,6 +19,7 @@ import { buildReceiptEscPos } from '@/utils/escpos';
 export default function DetailRiwayatPage() {
   const user = useAuthStore((s) => s.user);
   const plan = (user?.merchant?.plan as PlanType) || 'FREE';
+  const isPro = plan === 'PRO' || plan === 'BUSINESS'; // BUSINESS = superset PRO
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [trx, setTrx] = useState<Penjualan | null>(null);
@@ -28,6 +29,10 @@ export default function DetailRiwayatPage() {
   const printRef = useRef<HTMLDivElement>(null);
   const [receiptSize, setReceiptSize] = useState<ReceiptSize>('58');
   const [identitas, setIdentitas] = useState<Identitas | null>(null);
+  const [waModalOpen, setWaModalOpen] = useState(false);
+  const [upgradeModalOpen, setUpgradeModalOpen] = useState(false);
+  const [waNomor, setWaNomor] = useState('');
+  const [waSending, setWaSending] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true); setError('');
@@ -37,6 +42,28 @@ export default function DetailRiwayatPage() {
   }, [id]);
   useEffect(() => { load(); }, [load]);
   useEffect(() => { identitasService.get().then((it) => setIdentitas(it || null)).catch(() => {}); }, []);
+
+  function openKirimWA() {
+    if (!isPro) { setUpgradeModalOpen(true); return; }
+    setWaNomor('');
+    setWaModalOpen(true);
+  }
+
+  async function submitKirimWA() {
+    if (!trx) return;
+    const nomorBersih = waNomor.replace(/\D/g, '');
+    if (nomorBersih.length < 9) { toast.error('Nomor WhatsApp belum valid'); return; }
+    setWaSending(true);
+    try {
+      await penjualanService.kirimWA(trx.ID, nomorBersih);
+      toast.success('Struk terkirim ke WhatsApp');
+      setWaModalOpen(false);
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setWaSending(false);
+    }
+  }
 
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} onRetry={load} />;
@@ -73,6 +100,9 @@ export default function DetailRiwayatPage() {
           >
             <Printer className="h-4 w-4" /> Cetak
           </Button>
+          <Button variant="outline" onClick={openKirimWA}>
+            <MessageCircle className="h-4 w-4" /> Kirim WA
+          </Button>
         </div>
       </div>
       <Card><CardBody>
@@ -102,6 +132,41 @@ export default function DetailRiwayatPage() {
         </div>
         <p className="mt-3 text-right text-lg font-bold text-brand-600 dark:text-accent">Total: {formatRupiah(trx.TOTAL)}</p>
       </CardBody></Card>
+
+      <Modal
+        open={waModalOpen}
+        onClose={() => !waSending && setWaModalOpen(false)}
+        title="Kirim Struk via WhatsApp"
+        footer={(
+          <>
+            <Button variant="outline" onClick={() => setWaModalOpen(false)} disabled={waSending}>Batal</Button>
+            <Button onClick={submitKirimWA} disabled={waSending}>{waSending ? 'Mengirim...' : 'Kirim'}</Button>
+          </>
+        )}
+      >
+        <Input
+          label="Nomor WhatsApp"
+          placeholder="6281234567890"
+          value={waNomor}
+          onChange={(e) => setWaNomor(e.target.value)}
+          autoFocus
+        />
+        <p className="mt-1.5 text-xs text-slate-500">Format kode negara tanpa + atau spasi, mis. 62812xxxxxxx.</p>
+      </Modal>
+
+      <UpgradeModal
+        open={upgradeModalOpen}
+        onClose={() => setUpgradeModalOpen(false)}
+        title="Fitur khusus PRO"
+        description="Kirim struk otomatis ke WhatsApp pelanggan hanya tersedia untuk merchant plan PRO ke atas."
+        benefits={[
+          'Kirim struk otomatis ke WhatsApp pelanggan',
+          'Tambah produk lebih banyak (FREE maksimal 20)',
+          'Multiple kasir',
+          'Open Bill, voucher, pajak & service charge',
+        ]}
+        showUpgradeButton={false}
+      />
     </div>
   );
 }
