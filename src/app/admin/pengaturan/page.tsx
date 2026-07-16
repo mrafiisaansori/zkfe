@@ -83,7 +83,7 @@ export default function PengaturanPage() {
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
                 <Input label="Nama toko" {...register('nama')} />
                 <Input label="Alamat" {...register('alamat')} />
-                <Input label="No. Telp" {...register('no_telp')} />
+                <Input label="No. Telp" placeholder="081234567890" {...register('no_telp')} />
                 <Input label="Website" {...register('website')} />
                 <div className="flex justify-end pt-2">
                   <Button type="submit" loading={saving}><Save className="h-4 w-4" /> Simpan</Button>

@@ -913,10 +913,11 @@ export default function PosPage() {
               <div className="mt-3 rounded-xl border border-slate-200 p-3">
                 <Input
                   label="Kirim struk ke WhatsApp"
-                  placeholder="6281234567890"
+                  placeholder="081234567890"
                   value={waNomor}
                   onChange={(e) => setWaNomor(e.target.value)}
                 />
+                <p className="mt-1.5 text-xs text-slate-500">Format 08xxxxxxxxxx, contoh: 081234567890.</p>
                 <Button onClick={handleKirimWA} loading={waSending} className="mt-2 w-full">
                   <MessageCircle className="h-4 w-4" /> Kirim ke WhatsApp
                 </Button>

@@ -149,12 +149,12 @@ export default function DetailRiwayatPage() {
       >
         <Input
           label="Nomor WhatsApp"
-          placeholder="6281234567890"
+          placeholder="081234567890"
           value={waNomor}
           onChange={(e) => setWaNomor(e.target.value)}
           autoFocus
         />
-        <p className="mt-1.5 text-xs text-slate-500">Format kode negara tanpa + atau spasi, mis. 62812xxxxxxx.</p>
+        <p className="mt-1.5 text-xs text-slate-500">Format 08xxxxxxxxxx, contoh: 081234567890.</p>
       </Modal>
 
       <UpgradeModal

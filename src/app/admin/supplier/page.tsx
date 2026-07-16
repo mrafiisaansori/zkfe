@@ -109,7 +109,7 @@ export default function SupplierPage() {
         <div className="space-y-3">
           <Input label="Nama supplier" value={form.nama} onChange={(e) => setForm((f) => ({ ...f, nama: e.target.value }))} placeholder="mis. PT Sumber Rejeki" />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input label="No. Telepon / WhatsApp" value={form.no_telp} onChange={(e) => setForm((f) => ({ ...f, no_telp: e.target.value }))} />
+            <Input label="No. Telepon / WhatsApp" placeholder="081234567890" value={form.no_telp} onChange={(e) => setForm((f) => ({ ...f, no_telp: e.target.value }))} />
             <Input label="Email (opsional)" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
           </div>
           <Input label="Alamat" value={form.alamat} onChange={(e) => setForm((f) => ({ ...f, alamat: e.target.value }))} />
