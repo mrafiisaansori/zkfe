@@ -71,9 +71,9 @@ export default function DetailRiwayatPage() {
 
   return (
     <div className="max-w-md">
-      <div className="mb-4 flex items-center justify-between">
-        <Button variant="ghost" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /> Kembali</Button>
-        <div className="flex items-center gap-2">
+      <div className="mb-4">
+        <div className="mb-3 flex items-center justify-between">
+          <Button variant="ghost" onClick={() => router.back()}><ArrowLeft className="h-4 w-4" /> Kembali</Button>
           <div className="flex items-center gap-1 rounded-lg border border-slate-200 p-0.5">
             {(['58', '80'] as const).map((s) => (
               <button
@@ -84,8 +84,11 @@ export default function DetailRiwayatPage() {
               >{s}mm</button>
             ))}
           </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
+            className="w-full"
             onClick={async () => {
               const bytes = await buildReceiptEscPos({
                 trx,
@@ -100,7 +103,7 @@ export default function DetailRiwayatPage() {
           >
             <Printer className="h-4 w-4" /> Cetak
           </Button>
-          <Button variant="outline" onClick={openKirimWA}>
+          <Button variant="outline" className="w-full" onClick={openKirimWA}>
             <MessageCircle className="h-4 w-4" /> Kirim WA
           </Button>
         </div>

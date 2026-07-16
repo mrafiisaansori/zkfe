@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { CheckCircle2, Plus, Printer, ScanLine, ShoppingCart, X, ClipboardList, User, Hash, LockOpen, Lock, Wallet } from 'lucide-react';
+import { CheckCircle2, Plus, Printer, ScanLine, ShoppingCart, X, ClipboardList, User, Hash, LockOpen, Lock, Wallet, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { SearchInput, Button, Modal, Input, ConfirmDialog, UpgradeModal } from '@/components/ui';
 import { ProductGrid } from '@/components/pos/ProductGrid';
@@ -45,6 +45,8 @@ export default function PosPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const [success, setSuccess] = useState<{ result: CheckoutResult; trx: Penjualan; offline?: boolean } | null>(null);
+  const [waNomor, setWaNomor] = useState('');
+  const [waSending, setWaSending] = useState(false);
 
   // ===== Open Bill =====
   const router = useRouter();
@@ -488,6 +490,28 @@ export default function PosPage() {
     finally { setSavingBill(false); }
   }
 
+  function closeSuccess() {
+    setSuccess(null);
+    setWaNomor('');
+  }
+
+  async function handleKirimWA() {
+    if (!success) return;
+    if (!isPro) { setUpgradeOpen(true); return; }
+    const nomorBersih = waNomor.replace(/\D/g, '');
+    if (nomorBersih.length < 9) { toast.error('Nomor WhatsApp belum valid'); return; }
+    setWaSending(true);
+    try {
+      await penjualanService.kirimWA(success.trx.ID, nomorBersih);
+      toast.success('Struk terkirim ke WhatsApp');
+      setWaNomor('');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    } finally {
+      setWaSending(false);
+    }
+  }
+
   const categoryChip = (id: number | 'all', label: string) => {
     const active = activeKat === id;
     return (
@@ -811,7 +835,7 @@ export default function PosPage() {
 
       <Modal
         open={!!success}
-        onClose={() => setSuccess(null)}
+        onClose={closeSuccess}
         title="Transaksi Berhasil"
         footer={
           <>
@@ -843,7 +867,7 @@ export default function PosPage() {
             >
               <Printer className="h-4 w-4" /> Cetak thermal
             </Button>
-            <Button onClick={() => setSuccess(null)}>
+            <Button onClick={closeSuccess}>
               <Plus className="h-4 w-4" /> Transaksi baru
             </Button>
           </>
@@ -884,6 +908,27 @@ export default function PosPage() {
                 size={receiptSize}
               />
             </div>
+
+            {isPro ? (
+              <div className="mt-3 rounded-xl border border-slate-200 p-3">
+                <Input
+                  label="Kirim struk ke WhatsApp"
+                  placeholder="6281234567890"
+                  value={waNomor}
+                  onChange={(e) => setWaNomor(e.target.value)}
+                />
+                <Button onClick={handleKirimWA} loading={waSending} className="mt-2 w-full">
+                  <MessageCircle className="h-4 w-4" /> Kirim ke WhatsApp
+                </Button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setUpgradeOpen(true)}
+                className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-slate-200 p-3 text-sm font-semibold text-slate-500 transition-colors hover:border-primary hover:text-primary"
+              >
+                <MessageCircle className="h-4 w-4" /> Kirim struk ke WhatsApp (fitur PRO)
+              </button>
+            )}
           </div>
         )}
       </Modal>
