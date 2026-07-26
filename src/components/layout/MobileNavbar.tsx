@@ -12,7 +12,8 @@ export function MobileNavbar() {
   const user = useAuthStore((s) => s.user);
   const setNavLoading = useUIStore((s) => s.setNavLoading);
   if (!user) return null;
-  const allItems = flatNavForRole(user.role);
+  const isPro = user.merchant?.plan === 'PRO' || user.merchant?.plan === 'BUSINESS';
+  const allItems = flatNavForRole(user.role, isPro);
   const items = allItems.slice(0, 5);
   const isKasir = user.role === 'kasir';
 

@@ -194,6 +194,11 @@ export interface Kategori {
   DESKRIPSI: string;
 }
 
+export interface Satuan {
+  ID: number;
+  NAMA: string;
+}
+
 export interface Produk {
   ID: number;
   NAMA: string;
@@ -204,7 +209,43 @@ export interface Produk {
   BARCODE: string | null;
   FOTO: string | null;
   FOTO_URL: string | null;
+  ID_SATUAN?: number | null;
   kategori?: Kategori | null;
+  satuan?: Satuan | null;
+}
+
+// ===== Member / Customer (fitur khusus plan PRO) =====
+export interface Member {
+  ID: number;
+  KODE_MEMBER: string | null;
+  NAMA: string;
+  NO_HP: string;
+  EMAIL: string | null;
+  ALAMAT: string | null;
+  STATUS: number; // 1 aktif, 0 nonaktif
+  TANGGAL_DAFTAR: string | null;
+}
+
+export interface MemberRekap {
+  jumlah_transaksi: number;
+  total_nilai: number;
+  jumlah_item: number;
+  transaksi_terakhir: string | null;
+}
+
+export interface MemberRiwayatItem {
+  ID: number;
+  NO_NOTA: string | null;
+  TANGGAL: string;
+  JAM: string;
+  TOTAL: string;
+  STATUS_BAYAR: string | null;
+}
+
+export interface MemberDetail {
+  member: Member;
+  rekap: MemberRekap;
+  riwayat: MemberRiwayatItem[];
 }
 
 export interface Supplier {
@@ -361,6 +402,7 @@ export interface DetailPenjualan {
   HARGA_JUAL: number;
   QTY: number;
   MODIFIER?: string | null; // deskripsi varian terpilih
+  SATUAN?: string | null; // snapshot nama UOM saat transaksi
   DISKON?: number; // diskon per item (nominal)
   produk?: { ID: number; NAMA: string };
 }
@@ -397,8 +439,10 @@ export interface Penjualan {
   DISKON_VOUCHER?: number;
   STATUS: number; // 1 sah, 0 batal
   STATUS_BAYAR?: string | null; // LUNAS/PAID
+  MEMBER_ID?: number | null;
   kasir?: { ID: number; NAMA: string };
   jenisBayar?: { ID: number; NAMA: string };
+  member?: { ID: number; KODE_MEMBER: string | null; NAMA: string; NO_HP: string } | null;
   detail?: DetailPenjualan[];
   // Terisi hanya bila transaksi berasal dari Open Bill: siapa yang MEMBUKA bill
   // (bisa beda dari `kasir` di atas, yang selalu kasir yang MEMBAYAR/menutup).
@@ -509,6 +553,7 @@ export interface CartItem {
   modifierExtra?: number;       // tambahan harga dari varian
   modifierText?: string | null; // deskripsi varian (mis. "Ukuran: L")
   modifierOptionIds?: number[]; // id opsi terpilih (dikirim ke backend)
+  satuan?: string | null; // nama UOM produk (mis. "Box"), untuk tampilan saja
 }
 
 export type OpenBillStatus = 'OPEN' | 'PAID' | 'CANCELLED';

@@ -7,9 +7,9 @@ import {
   Card, CardBody, Button, SearchInput, DataTable, Modal, ConfirmDialog, Badge, ProductImage, UpgradeModal, Pagination, type Column,
 } from '@/components/ui';
 import { ProdukForm } from '@/components/forms/ProdukForm';
-import { produkService, kategoriService, modifierService, getErrorMessage } from '@/services';
+import { produkService, kategoriService, satuanService, modifierService, getErrorMessage } from '@/services';
 import type { ProdukInput, ImportResult } from '@/services/produk.service';
-import type { Produk, Kategori, RekamStok, ModifierGroup } from '@/types';
+import type { Produk, Kategori, Satuan, RekamStok, ModifierGroup } from '@/types';
 import type { PaginationMeta } from '@/services/api';
 import { formatRupiah, formatDateTime } from '@/utils/format';
 import { productImage } from '@/utils/image';
@@ -19,6 +19,7 @@ import { usePageLoading } from '@/hooks/usePageLoading';
 export default function ProdukPage() {
   const [produk, setProduk] = useState<Produk[]>([]);
   const [kategori, setKategori] = useState<Kategori[]>([]);
+  const [satuan, setSatuan] = useState<Satuan[]>([]);
   const [loading, setLoading] = useState(true);
   usePageLoading(loading);
   const [search, setSearch] = useState('');
@@ -100,6 +101,8 @@ export default function ProdukPage() {
     return () => clearTimeout(t);
   }, [search, page, load]);
 
+  useEffect(() => { satuanService.list().then((s) => setSatuan(s || [])).catch(() => {}); }, []);
+
   async function handleSubmit(data: ProdukInput, file: File | null) {
     setSaving(true);
     try {
@@ -143,6 +146,7 @@ export default function ProdukPage() {
     { header: 'Nama', accessor: (r) => <span className="font-medium text-slate-800">{r.NAMA}</span> },
     { header: 'Kategori', accessor: (r) => r.kategori?.DESKRIPSI ?? '-' },
     { header: 'Harga jual', accessor: (r) => formatRupiah(r.HARGA_JUAL) },
+    { header: 'Satuan', accessor: (r) => r.satuan?.NAMA ?? '-' },
     { header: 'Stok', accessor: (r) => <Badge tone={r.STOK <= 0 ? 'red' : r.STOK <= 10 ? 'amber' : 'green'}>{r.STOK}</Badge> },
     { header: 'Barcode', accessor: (r) => r.BARCODE || '-' },
     {
@@ -189,7 +193,7 @@ export default function ProdukPage() {
       </Card>
 
       <Modal open={formOpen} onClose={() => { setFormOpen(false); setEditing(null); }} title={editing ? 'Edit Produk' : 'Tambah Produk'}>
-        <ProdukForm kategori={kategori} initial={editing} loading={saving} onSubmit={handleSubmit} onCancel={() => { setFormOpen(false); setEditing(null); }} />
+        <ProdukForm kategori={kategori} satuan={satuan} initial={editing} loading={saving} onSubmit={handleSubmit} onCancel={() => { setFormOpen(false); setEditing(null); }} />
       </Modal>
 
       <ConfirmDialog open={!!toDelete} onClose={() => setToDelete(null)} onConfirm={handleDelete} loading={deleting}

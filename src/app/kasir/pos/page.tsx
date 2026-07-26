@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { SearchInput, Button, Modal, Input, ConfirmDialog, UpgradeModal } from '@/components/ui';
 import { ProductGrid } from '@/components/pos/ProductGrid';
 import { Cart } from '@/components/pos/Cart';
+import { MemberPickerModal } from '@/components/pos/MemberPickerModal';
 import { PaymentModal, isQrisName } from '@/components/pos/PaymentModal';
 import { SplitBillModal, type SplitConfirmData } from '@/components/pos/SplitBillModal';
 import { Receipt } from '@/components/pos/Receipt';
@@ -62,6 +63,7 @@ export default function PosPage() {
   const billCtx = cart.bill;
   const isPro = plan === 'PRO' || plan === 'BUSINESS'; // BUSINESS = superset PRO
   const [midtransRes, setMidtransRes] = useState<MidtransSnapResult | null>(null);
+  const [memberPickerOpen, setMemberPickerOpen] = useState(false);
 
   // ===== Sesi kasir (shift) =====
   // null = belum diketahui (loading), true = sesi aktif, false = belum buka.
@@ -240,6 +242,7 @@ export default function PosPage() {
       diskon: cart.diskon,
       keterangan: data.keterangan,
       kode_voucher: data.kode_voucher,
+      member_id: cart.member?.id,
     };
     try {
       // Mode edit bill -> bayar open bill; selain itu checkout langsung biasa.
@@ -641,6 +644,8 @@ export default function PosPage() {
                 onUpdateBill={handleUpdateBill}
                 onSplitBill={handleSplitBillClick}
                 onCancelBill={() => setCancelOpen(true)}
+                isPro={isPro}
+                onPickMember={() => setMemberPickerOpen(true)}
               />
         </aside>
       </div>
@@ -670,11 +675,20 @@ export default function PosPage() {
                 onUpdateBill={handleUpdateBill}
                 onSplitBill={handleSplitBillClick}
                 onCancelBill={() => setCancelOpen(true)}
+                isPro={isPro}
+                onPickMember={() => setMemberPickerOpen(true)}
               />
             </div>
           </div>
         </div>
       )}
+
+      <MemberPickerModal
+        open={memberPickerOpen}
+        onClose={() => setMemberPickerOpen(false)}
+        selected={cart.member}
+        onSelect={cart.setMember}
+      />
 
       <PaymentModal
         open={payOpen}
@@ -888,6 +902,11 @@ export default function PosPage() {
               {success.result.kembalian != null && (
                 <p className="text-lg font-semibold text-emerald-600 dark:text-emerald-300">
                   Kembalian: {formatRupiah(success.result.kembalian)}
+                </p>
+              )}
+              {success.trx.member && (
+                <p className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                  Member: {success.trx.member.NAMA}
                 </p>
               )}
               {success.trx.open_bill && (

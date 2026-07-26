@@ -13,10 +13,15 @@ export interface BillContext {
 
 const newLineId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+// Member terpilih untuk transaksi saat ini (fitur PRO, opsional).
+export interface CartMember { id: number; nama: string }
+
 interface CartState {
   items: CartItem[];
   diskon: number;
   bill: BillContext | null;
+  member: CartMember | null;
+  setMember: (member: CartMember | null) => void;
   // Tambah produk biasa (tanpa varian). Digabung bila produk sama & tanpa varian.
   addItem: (produk: Produk) => { ok: boolean; message?: string };
   // Tambah produk dengan varian/modifier terpilih (selalu baris baru).
@@ -40,6 +45,8 @@ export const useCartStore = create<CartState>((set, get) => ({
   items: [],
   diskon: 0,
   bill: null,
+  member: null,
+  setMember: (member) => set({ member }),
 
   addItem: (produk) => {
     if (produk.STOK <= 0) return { ok: false, message: 'Stok produk habis' };
@@ -54,6 +61,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         items: [...items, {
           lineId: newLineId(), id_produk: produk.ID, nama: produk.NAMA, harga: produk.HARGA_JUAL,
           qty: 1, stok: produk.STOK, image: productImage(produk), modifierExtra: 0, modifierOptionIds: [],
+          satuan: produk.satuan?.NAMA ?? null,
         }],
       });
     }
@@ -70,6 +78,7 @@ export const useCartStore = create<CartState>((set, get) => ({
         lineId: newLineId(), id_produk: produk.ID, nama: produk.NAMA, harga: produk.HARGA_JUAL,
         qty: 1, stok: produk.STOK, image: productImage(produk),
         modifierExtra: extra, modifierText: text, modifierOptionIds: (options || []).map((o) => o.ID),
+        satuan: produk.satuan?.NAMA ?? null,
       }],
     });
     return { ok: true };
@@ -86,7 +95,7 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   removeItem: (lineId) => set({ items: get().items.filter((i) => i.lineId !== lineId) }),
   setDiskon: (n) => set({ diskon: Math.max(0, n) }),
-  clear: () => set({ items: [], diskon: 0, bill: null }),
+  clear: () => set({ items: [], diskon: 0, bill: null, member: null }),
 
   loadBill: (bill) => set({
     diskon: 0,

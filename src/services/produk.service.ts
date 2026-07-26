@@ -11,6 +11,7 @@ export interface ProdukInput {
   harga_beli: number;
   harga_jual: number;
   barcode?: string;
+  id_satuan?: number | null;
 }
 export interface ProdukListParams {
   search?: string;

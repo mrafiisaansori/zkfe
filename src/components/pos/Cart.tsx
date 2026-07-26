@@ -1,5 +1,5 @@
 'use client';
-import { Minus, Percent, Plus, ShoppingCart, Trash2, Save, ClipboardList } from 'lucide-react';
+import { Minus, Percent, Plus, ShoppingCart, Trash2, Save, ClipboardList, User, ChevronRight } from 'lucide-react';
 import { Button, EmptyState, ProductImage } from '@/components/ui';
 import { useCartStore } from '@/stores/cartStore';
 import { formatRupiah } from '@/utils/format';
@@ -10,10 +10,12 @@ interface CartProps {
   onUpdateBill?: () => void;   // Simpan perubahan (mode edit bill)
   onCancelBill?: () => void;   // Batalkan open bill (mode edit bill)
   onSplitBill?: () => void;    // Bayar sebagian item bill
+  isPro?: boolean;             // fitur Member khusus plan PRO
+  onPickMember?: () => void;
 }
 
-export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSplitBill }: CartProps) {
-  const { items, updateQty, removeItem, subtotal, total, diskon, setDiskon, clear, bill } = useCartStore();
+export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSplitBill, isPro, onPickMember }: CartProps) {
+  const { items, updateQty, removeItem, subtotal, total, diskon, setDiskon, clear, bill, member } = useCartStore();
   const billMode = !!bill;
 
   return (
@@ -37,6 +39,22 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
         )}
       </div>
 
+      {isPro && onPickMember && (
+        <button
+          onClick={onPickMember}
+          className="mx-3 mt-3 flex shrink-0 items-center gap-2.5 rounded-2xl border border-brand-100 bg-brand-50/60 px-3 py-2.5 text-left transition-colors hover:border-primary"
+        >
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+            <User className="h-4 w-4" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-bold text-slate-800">{member ? member.nama : 'Tanpa member'}</span>
+            <span className="block text-[11px] text-slate-500">{member ? 'Ganti member' : 'Pilih member/customer'}</span>
+          </span>
+          <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
+        </button>
+      )}
+
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
         {items.length === 0 ? (
           <EmptyState title="Keranjang masih kosong" description="Pilih produk dari grid untuk mulai transaksi." />
@@ -53,7 +71,7 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold leading-tight text-slate-900">{it.nama}</p>
                         {it.modifierText && <p className="truncate text-[11px] text-primary">{it.modifierText}</p>}
-                        <p className="mt-0.5 text-xs text-slate-500">{formatRupiah(unit)}</p>
+                        <p className="mt-0.5 text-xs text-slate-500">{formatRupiah(unit)}{it.satuan ? ` / ${it.satuan}` : ''}</p>
                       </div>
                       <button
                         onClick={() => removeItem(it.lineId)}

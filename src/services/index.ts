@@ -3,6 +3,8 @@ export * from './auth.service';
 export * from './account.service';
 export * from './produk.service';
 export * from './kategori.service';
+export * from './satuan.service';
+export * from './member.service';
 export * from './pengguna.service';
 export * from './jenisBayar.service';
 export * from './penjualan.service';

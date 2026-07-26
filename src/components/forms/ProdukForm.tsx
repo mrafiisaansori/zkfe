@@ -3,12 +3,13 @@ import { useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { ImagePlus, X } from 'lucide-react';
 import { Input, CurrencyInput, Select, Button, ProductImage } from '@/components/ui';
-import type { Produk, Kategori } from '@/types';
+import type { Produk, Kategori, Satuan } from '@/types';
 import type { ProdukInput } from '@/services/produk.service';
 import { productImage } from '@/utils/image';
 
 interface Props {
   kategori: Kategori[];
+  satuan: Satuan[];
   initial?: Produk | null;
   loading?: boolean;
   onSubmit: (data: ProdukInput, file: File | null) => void;
@@ -18,11 +19,12 @@ interface Props {
 const MAX = 2 * 1024 * 1024;
 const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
-export function ProdukForm({ kategori, initial, loading, onSubmit, onCancel }: Props) {
+export function ProdukForm({ kategori, satuan, initial, loading, onSubmit, onCancel }: Props) {
   const { register, control, handleSubmit, formState: { errors } } = useForm<ProdukInput>({
     defaultValues: initial ? {
       nama: initial.NAMA, id_kategori: initial.ID_KATEGORI, harga_beli: initial.HARGA_BELI,
       harga_jual: initial.HARGA_JUAL, barcode: initial.BARCODE ?? '', stok: initial.STOK,
+      id_satuan: initial.ID_SATUAN ?? undefined,
     } : { stok: 0 },
   });
 
@@ -47,7 +49,7 @@ export function ProdukForm({ kategori, initial, loading, onSubmit, onCancel }: P
   }
 
   return (
-    <form onSubmit={handleSubmit((d) => onSubmit(d, file))} className="space-y-3">
+    <form onSubmit={handleSubmit((d) => onSubmit({ ...d, id_satuan: Number.isFinite(d.id_satuan) ? d.id_satuan : null }, file))} className="space-y-3">
       {/* Upload gambar + preview */}
       <div>
         <label className="mb-1 block text-sm font-medium text-slate-700">Foto produk</label>
@@ -96,6 +98,9 @@ export function ProdukForm({ kategori, initial, loading, onSubmit, onCancel }: P
       {!initial && (
         <Input label="Stok awal" type="number" {...register('stok', { valueAsNumber: true })} />
       )}
+      <Select label="Satuan (opsional)" placeholder="Pilih satuan"
+        options={satuan.map((s) => ({ value: s.ID, label: s.NAMA }))}
+        {...register('id_satuan', { valueAsNumber: true })} />
       <Input label="Barcode (opsional)" {...register('barcode')} />
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>Batal</Button>

@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, Tags, Boxes, Users, Receipt, BarChart3,
   Settings, ShoppingCart, History, QrCode, Store, ClipboardList,
-  TicketPercent, CreditCard, Layers, Truck, Undo2, Contact, Database, Wallet, LifeBuoy, TrendingUp, type LucideIcon,
+  TicketPercent, CreditCard, Layers, Truck, Undo2, Contact, Database, Wallet, LifeBuoy, TrendingUp, Ruler, Contact2, type LucideIcon,
 } from 'lucide-react';
 import type { Role } from '@/types';
 
@@ -10,6 +10,7 @@ export interface NavLeaf {
   href: string;
   icon: LucideIcon;
   roles: Role[];
+  pro?: boolean; // hanya tampil untuk merchant plan PRO/BUSINESS (mis. Member)
 }
 
 export interface NavGroup {
@@ -35,9 +36,11 @@ export const NAV_TREE: NavNode[] = [
     roles: ['admin', 'gudang'],
     children: [
       { label: 'Kategori', href: '/admin/kategori', icon: Tags, roles: ['admin', 'gudang'] },
+      { label: 'Satuan', href: '/admin/satuan', icon: Ruler, roles: ['admin', 'gudang'] },
       { label: 'Varian', href: '/admin/modifier', icon: Layers, roles: ['admin', 'gudang'] },
       { label: 'Produk', href: '/admin/produk', icon: Package, roles: ['admin', 'gudang'] },
       { label: 'Supplier', href: '/admin/supplier', icon: Contact, roles: ['admin', 'gudang'] },
+      { label: 'Member', href: '/admin/member', icon: Contact2, roles: ['admin'], pro: true },
       { label: 'Pengguna', href: '/admin/user', icon: Users, roles: ['admin'] },
       { label: 'Voucher', href: '/admin/voucher', icon: TicketPercent, roles: ['admin'] },
     ],
@@ -82,14 +85,17 @@ export const NAV_TREE: NavNode[] = [
 ];
 
 // Susun menu untuk sebuah role: filter node + filter anak grup. Grup kosong dibuang.
-export function navForRole(role: Role): NavNode[] {
+// isPro: merchant plan PRO/BUSINESS? Menu berlabel `pro: true` (mis. Member)
+// disembunyikan sama sekali untuk plan FREE - bukan cuma ditampilkan nonaktif.
+export function navForRole(role: Role, isPro = false): NavNode[] {
   const out: NavNode[] = [];
   for (const node of NAV_TREE) {
     if (!node.roles.includes(role)) continue;
     if (isGroup(node)) {
-      const children = node.children.filter((c) => c.roles.includes(role));
+      const children = node.children.filter((c) => c.roles.includes(role) && (!c.pro || isPro));
       if (children.length) out.push({ ...node, children });
     } else {
+      if (node.pro && !isPro) continue;
       out.push(node);
     }
   }
@@ -97,9 +103,9 @@ export function navForRole(role: Role): NavNode[] {
 }
 
 // Versi datar (semua leaf) untuk role — dipakai bottom-nav & deteksi item aktif.
-export function flatNavForRole(role: Role): NavLeaf[] {
+export function flatNavForRole(role: Role, isPro = false): NavLeaf[] {
   const out: NavLeaf[] = [];
-  for (const node of navForRole(role)) {
+  for (const node of navForRole(role, isPro)) {
     if (isGroup(node)) out.push(...node.children);
     else out.push(node);
   }

@@ -42,8 +42,9 @@ export function MobileMenu() {
   }, [open]);
 
   if (!user) return null;
-  const nodes = navForRole(user.role);
-  const leaves = flatNavForRole(user.role);
+  const isPro = user.merchant?.plan === 'PRO' || user.merchant?.plan === 'BUSINESS';
+  const nodes = navForRole(user.role, isPro);
+  const leaves = flatNavForRole(user.role, isPro);
   const isKasir = user.role === 'kasir';
 
   const renderLeaf = (item: NavLeaf, nested = false) => {

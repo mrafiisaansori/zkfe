@@ -16,8 +16,9 @@ export function Sidebar() {
   const setNavLoading = useUIStore((s) => s.setNavLoading);
   const menuOpen = useUIStore((s) => s.sidebarOpen);
   if (!user) return null;
-  const nodes = navForRole(user.role);
-  const leaves = flatNavForRole(user.role);
+  const isPro = user.merchant?.plan === 'PRO' || user.merchant?.plan === 'BUSINESS';
+  const nodes = navForRole(user.role, isPro);
+  const leaves = flatNavForRole(user.role, isPro);
 
   function LeafLink({ item, nested = false }: { item: NavLeaf; nested?: boolean }) {
     const active = isHrefActive(pathname, item.href, leaves);

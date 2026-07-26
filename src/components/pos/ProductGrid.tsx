@@ -50,7 +50,7 @@ export function ProductGrid({ produk, loading, onAdd }: Props) {
             <div className="mt-2.5 flex flex-col">
               <p className="line-clamp-1 text-sm font-bold leading-snug text-slate-900 sm:text-[15px]">{p.NAMA}</p>
               <span className={cn('mt-1 w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold', stockTone)}>
-                Stok {p.STOK}
+                Stok {p.STOK}{p.satuan?.NAMA ? ` ${p.satuan.NAMA}` : ''}
               </span>
               <div className="mt-2 flex items-end justify-between gap-2">
                 <span className="text-sm font-bold leading-tight text-slate-900 sm:text-base">{formatRupiah(p.HARGA_JUAL)}</span>

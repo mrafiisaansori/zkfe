@@ -9,6 +9,7 @@ export interface CheckoutInput {
   diskon?: number;
   keterangan?: string;
   kode_voucher?: string;
+  member_id?: number;
 }
 
 export interface PenjualanFilter {
