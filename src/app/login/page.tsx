@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
-import { ArrowRight, Eye, EyeOff, Lock, User } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Lock, Smartphone, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
 import { Button, Turnstile, isTurnstileEnabled, type TurnstileHandle } from '@/components/ui';
@@ -101,6 +101,15 @@ export default function LoginPage() {
             Daftar Merchant
           </Link>
         </p>
+
+        <a
+          href="/zona-kasir.apk"
+          download
+          className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-primary transition-colors hover:bg-brand-100"
+        >
+          <Smartphone className="h-4 w-4" />
+          Unduh Aplikasi Android (APK)
+        </a>
       </div>
     </AuthShell>
   );
