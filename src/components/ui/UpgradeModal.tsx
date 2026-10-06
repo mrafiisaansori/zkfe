@@ -5,7 +5,7 @@ import { Modal } from './Modal';
 import { Button } from './Button';
 
 const DEFAULT_BENEFITS = [
-  'Tambah produk lebih banyak (FREE maksimal 20)',
+  'Tambah produk lebih banyak (FREE maksimal 5)',
   'Multiple kasir',
   'Open Bill, voucher, pajak & service charge',
   'Laporan lengkap & struk tanpa branding Zona Kasir',

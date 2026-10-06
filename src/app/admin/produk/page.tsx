@@ -31,7 +31,7 @@ export default function ProdukPage() {
   const [toDelete, setToDelete] = useState<Produk | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [history, setHistory] = useState<{ produk: Produk; rows: RekamStok[] } | null>(null);
-  // Modal upgrade saat limit produk FREE (20) tercapai.
+  // Modal upgrade saat limit produk FREE (5) tercapai.
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // ===== Import massal =====
@@ -203,7 +203,7 @@ export default function ProdukPage() {
         open={upgradeOpen}
         onClose={() => setUpgradeOpen(false)}
         title="Batas produk paket FREE tercapai"
-        description="Paket FREE hanya mendukung maksimal 20 produk. Upgrade ke PRO untuk menambahkan produk lebih banyak dan membuka fitur lanjutan."
+        description="Paket FREE hanya mendukung maksimal 5 produk. Upgrade ke PRO untuk menambahkan produk lebih banyak dan membuka fitur lanjutan."
       />
 
       <Modal open={!!history} onClose={() => setHistory(null)} title={`Riwayat stok - ${history?.produk.NAMA ?? ''}`}>

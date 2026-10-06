@@ -25,7 +25,7 @@ const BUSINESS_WHATSAPP_URL = 'https://wa.me/62859106997680?text=Halo%20Zona%20K
 
 // Manfaat PRO — dipakai untuk meyakinkan merchant FREE sebelum memilih paket.
 const PRO_BENEFITS = [
-  'Tambah produk lebih banyak (FREE maksimal 20)',
+  'Tambah produk lebih banyak (FREE maksimal 5)',
   'Multiple kasir sekaligus',
   'Open Bill, voucher, pajak & service charge',
   'Laporan lengkap & struk tanpa branding Zona Kasir',

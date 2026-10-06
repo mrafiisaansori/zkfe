@@ -164,7 +164,7 @@ export default function DetailRiwayatPage() {
         description="Kirim struk otomatis ke WhatsApp pelanggan hanya tersedia untuk merchant plan PRO ke atas."
         benefits={[
           'Kirim struk otomatis ke WhatsApp pelanggan',
-          'Tambah produk lebih banyak (FREE maksimal 20)',
+          'Tambah produk lebih banyak (FREE maksimal 5)',
           'Multiple kasir',
           'Open Bill, voucher, pajak & service charge',
         ]}

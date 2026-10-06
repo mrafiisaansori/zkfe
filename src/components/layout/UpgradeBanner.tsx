@@ -4,7 +4,7 @@ import { Crown, Check, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 
 const BENEFITS = [
-  'Tambah produk lebih banyak (FREE maksimal 20)',
+  'Tambah produk lebih banyak (FREE maksimal 5)',
   'Multiple kasir',
   'Open Bill untuk cafe / coffee shop',
   'Struk tanpa branding Zona Kasir',
