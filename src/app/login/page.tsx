@@ -2,7 +2,7 @@
 import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
-import { ArrowRight, Eye, EyeOff, Lock, Smartphone, User } from 'lucide-react';
+import { Eye, EyeOff, Lock, Smartphone, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { AuthLoadingOverlay, AuthShell } from '@/components/auth/AuthShell';
 import { Button, Turnstile, isTurnstileEnabled, type TurnstileHandle } from '@/components/ui';
@@ -37,9 +37,6 @@ export default function LoginPage() {
       <AuthLoadingOverlay show={loading} label="Sedang masuk ke akun..." />
       <div>
         <div className="mb-7">
-          <p className="mb-2 inline-flex rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold text-primary">
-            Zona Kasir Merchant
-          </p>
           <h2 className="text-3xl font-semibold tracking-tight text-ink">Selamat datang</h2>
           <p className="mt-1.5 text-sm leading-6 text-slate-500">
             Masuk untuk melanjutkan transaksi, memantau stok, dan mengelola toko.
@@ -91,7 +88,7 @@ export default function LoginPage() {
           <Turnstile ref={turnstileRef} onToken={setCaptcha} />
 
           <Button type="submit" variant="gradient" size="lg" loading={loading} className="h-12 w-full rounded-xl text-base font-semibold">
-            {loading ? 'Sedang masuk...' : <>Masuk <ArrowRight className="h-4 w-4" /></>}
+            {loading ? 'Sedang masuk...' : <>Masuk</>}
           </Button>
         </form>
 
