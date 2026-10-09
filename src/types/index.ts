@@ -578,6 +578,8 @@ export interface OpenBill {
   CUSTOMER_NAME: string | null;
   TABLE_NO: string | null;
   NOTE: string | null;
+  MEMBER_ID?: number | null;
+  member?: { ID: number; NAMA: string; NO_HP: string } | null;
   STATUS: OpenBillStatus;
   TOTAL: number;
   ID_USER: number;

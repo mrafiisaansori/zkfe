@@ -452,6 +452,7 @@ export default function PosPage() {
         customer_name: billForm.customer_name,
         table_no: billForm.table_no,
         note: billForm.note,
+        member_id: cart.member?.id ?? null,
         items: cart.items.map((i) => ({ id_produk: i.id_produk, qty: i.qty, modifier_option_ids: i.modifierOptionIds || [] })),
       });
       toast.success('Pesanan tersimpan sebagai Open Bill');
@@ -472,6 +473,7 @@ export default function PosPage() {
         customer_name: billCtx.customer_name,
         table_no: billCtx.table_no,
         note: billCtx.note,
+        member_id: cart.member?.id ?? null,
         items: cart.items.map((i) => ({ id_produk: i.id_produk, qty: i.qty, modifier_option_ids: i.modifierOptionIds || [] })),
       });
       toast.success('Perubahan bill tersimpan');
@@ -579,6 +581,11 @@ export default function PosPage() {
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1 text-sm font-bold text-primary">
                   <Hash className="h-4 w-4" /> Meja {billCtx.table_no?.trim() || '-'}
                 </span>
+                {cart.member && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-700">
+                    <User className="h-4 w-4" /> Member: {cart.member.nama}
+                  </span>
+                )}
                 {billCtx.no_bill && (
                   <span className="ml-auto font-mono text-xs font-semibold text-slate-400">{billCtx.no_bill}</span>
                 )}

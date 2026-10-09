@@ -99,6 +99,7 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   loadBill: (bill) => set({
     diskon: 0,
+    member: bill.member ? { id: bill.member.ID, nama: bill.member.NAMA } : null,
     bill: {
       id: bill.ID,
       no_bill: bill.NO_BILL,

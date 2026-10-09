@@ -75,6 +75,7 @@ export default function OpenBillPage() {
   const columns: Column<OpenBill>[] = [
     { header: 'No Bill', accessor: (r) => <span className="font-semibold text-slate-800">{r.NO_BILL || '-'}</span> },
     { header: 'Pelanggan', accessor: (r) => r.CUSTOMER_NAME || '-' },
+    { header: 'Member', accessor: (r) => r.member?.NAMA || '-' },
     { header: 'Meja', accessor: (r) => r.TABLE_NO || '-' },
     { header: 'Total', accessor: (r) => <span className="font-semibold">{formatRupiah(Number(r.TOTAL) || 0)}</span> },
     { header: 'Waktu', accessor: (r) => formatTime(r.CREATED_AT) },

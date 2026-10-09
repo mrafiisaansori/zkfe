@@ -11,6 +11,7 @@ export interface OpenBillInput {
   customer_name?: string;
   table_no?: string;
   note?: string;
+  member_id?: number | null;
   items: OpenBillItemInput[];
 }
 
