@@ -53,6 +53,8 @@ export default function LanggananPage() {
   const [cancelling, setCancelling] = useState(false);
   const [businessContactOpen, setBusinessContactOpen] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [kodeVoucher, setKodeVoucher] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -69,6 +71,21 @@ export default function LanggananPage() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  async function redeem() {
+    const kode = kodeVoucher.trim();
+    if (!kode) return;
+    setRedeeming(true);
+    try {
+      const res = await subscriptionService.redeemVoucher(kode);
+      toast.success(`Voucher berhasil. Plan ${res.plan} aktif sampai ${formatDateTime(res.pro_expires_at)}`);
+      setKodeVoucher('');
+      const session = useAuthStore.getState();
+      if (session.token) session.setSession(await authService.me(), session.token);
+      await load();
+    } catch (error) { toast.error(getErrorMessage(error)); }
+    finally { setRedeeming(false); }
+  }
 
   useEffect(() => {
     if (!active || active.STATUS !== 'PENDING') return undefined;
@@ -267,6 +284,20 @@ export default function LanggananPage() {
             </Button>
           </div>
         )}
+      </CardBody></Card>
+
+      <Card className="mt-4"><CardBody>
+        <p className="font-semibold text-slate-800">Punya kode voucher?</p>
+        <p className="mb-3 text-sm text-slate-500">Masukkan kode untuk memperpanjang paket tanpa bayar.</p>
+        <form className="flex flex-col gap-2 sm:flex-row" onSubmit={(e) => { e.preventDefault(); redeem(); }}>
+          <input
+            value={kodeVoucher}
+            onChange={(e) => setKodeVoucher(e.target.value.toUpperCase())}
+            placeholder="Kode voucher"
+            className="h-11 flex-1 rounded-xl border border-line bg-white px-3 font-mono text-sm outline-none focus:border-primary"
+          />
+          <Button type="submit" loading={redeeming} disabled={!kodeVoucher.trim()}>Redeem</Button>
+        </form>
       </CardBody></Card>
 
       <Card className="mt-4"><CardBody>

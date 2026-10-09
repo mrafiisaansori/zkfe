@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Package, Tags, Boxes, Users, Receipt, BarChart3,
   Settings, ShoppingCart, History, QrCode, Store, ClipboardList,
-  TicketPercent, CreditCard, Layers, Truck, Undo2, Contact, Database, Wallet, LifeBuoy, TrendingUp, Ruler, Contact2, type LucideIcon,
+  TicketPercent, Ticket, CreditCard, Layers, Truck, Undo2, Contact, Database, Wallet, LifeBuoy, TrendingUp, Ruler, Contact2, type LucideIcon,
 } from 'lucide-react';
 import type { Role } from '@/types';
 
@@ -71,6 +71,7 @@ export const NAV_TREE: NavNode[] = [
   { label: 'Dashboard', href: '/superadmin/dashboard', icon: LayoutDashboard, roles: ['superadmin'] },
   { label: 'Merchant', href: '/superadmin/merchant', icon: Store, roles: ['superadmin'] },
   { label: 'Pembayaran Langganan', href: '/superadmin/langganan', icon: CreditCard, roles: ['superadmin'] },
+  { label: 'Voucher Langganan', href: '/superadmin/voucher', icon: Ticket, roles: ['superadmin'] },
   { label: 'Laporan Pendapatan', href: '/superadmin/laporan', icon: TrendingUp, roles: ['superadmin'] },
   { label: 'Harga Plan', href: '/superadmin/langganan/setting', icon: QrCode, roles: ['superadmin'] },
   { label: 'Test Midtrans GoPay', href: '/superadmin/midtrans-test', icon: QrCode, roles: ['superadmin'] },

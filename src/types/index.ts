@@ -134,6 +134,30 @@ export interface SubscriptionPayment {
   pemohon?: { ID: number; NAMA: string };
 }
 
+export interface SubscriptionVoucher {
+  ID: number;
+  KODE: string;
+  TARGET_PLAN: 'PRO' | 'BUSINESS';
+  PAKET: SubscriptionPaket;
+  MAX_REDEMPTIONS: number | null;
+  USED_COUNT: number;
+  VALID_FROM: string | null;
+  VALID_UNTIL: string | null;
+  IS_ACTIVE: boolean;
+  NOTE: string | null;
+}
+
+export interface SubscriptionVoucherRedemption {
+  ID: number;
+  MERCHANT_ID: number;
+  TARGET_PLAN: PlanType;
+  PAKET: SubscriptionPaket;
+  DURATION_MONTHS: number;
+  PRO_EXPIRES_AT: string | null;
+  CREATED_AT: string;
+  merchant?: { ID: number; NAMA: string; EMAIL: string | null };
+}
+
 export interface Billing {
   plan: PlanType;
   pro_expires_at: string | null;
