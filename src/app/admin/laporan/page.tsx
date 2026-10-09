@@ -1,18 +1,16 @@
 'use client';
-import { useState } from 'react';
-import { FileSpreadsheet, FileText, Search, TrendingUp, Wallet, Receipt } from 'lucide-react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { ChevronDown, Download, FileSpreadsheet, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { StatCard } from '@/components/layout/StatCard';
-import { Card, CardBody, Button, FilterDate, DataTable, LoadingState, Pagination, UpgradeModal, type Column } from '@/components/ui';
+import { Card, CardBody, Button, FilterDate, LoadingState, UpgradeModal } from '@/components/ui';
 import { laporanService, getErrorMessage } from '@/services';
 import { useAuthStore } from '@/stores/authStore';
-import type { LaporanPenjualan, LaporanPendapatan, Penjualan, RekapLaporan, PlanType } from '@/types';
-import type { PaginationMeta } from '@/services/api';
-import { formatRupiah, formatDate, todayISO } from '@/utils/format';
+import type { LaporanPenjualan, LaporanPendapatan, RekapLaporan, PlanType } from '@/types';
+import { formatRupiah, todayISO } from '@/utils/format';
 import { exportFinancialReportExcel, exportFinancialReportPdf } from '@/utils/financialReportExport';
-import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
+import { cn } from '@/utils/cn';
 
 const PDF_LOADING_HTML = `<!doctype html>
 <html lang="id">
@@ -37,19 +35,18 @@ export default function LaporanPage() {
   const [penjualan, setPenjualan] = useState<LaporanPenjualan | null>(null);
   const [pendapatan, setPendapatan] = useState<LaporanPendapatan | null>(null);
   const [rekap, setRekap] = useState<RekapLaporan | null>(null);
-  const [page, setPage] = useState(1);
-  const [meta, setMeta] = useState<PaginationMeta | undefined>();
+  const [menuOpen, setMenuOpen] = useState(false);
   const [exporting, setExporting] = useState<'excel' | 'pdf' | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  async function run(pageNo = page) {
+  async function run() {
     setLoading(true);
     try {
       const [pj, pd] = await Promise.all([
-        laporanService.penjualanPage(awal, akhir, 'all', 1, pageNo, 25),
+        laporanService.penjualanPage(awal, akhir, 'all', 1, 1, 1),
         laporanService.pendapatan(awal, akhir, 1),
       ]);
-      setPenjualan(pj.data); setMeta(pj.meta); setPendapatan(pd);
+      setPenjualan(pj.data); setPendapatan(pd);
       // Rekap lengkap hanya untuk PRO/BUSINESS (FREE -> backend 403, diabaikan).
       if (isPro) {
         try { setRekap(await laporanService.rekap({ tanggal_awal: awal, tanggal_akhir: akhir, status: 1, top_limit: 20 })); }
@@ -58,6 +55,11 @@ export default function LaporanPage() {
     } catch (err) { toast.error(getErrorMessage(err)); }
     finally { setLoading(false); }
   }
+
+  useEffect(() => {
+    if (awal && akhir && awal <= akhir) run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awal, akhir]);
 
   async function loadExportData() {
     const [fullPenjualan, fullPendapatan] = await Promise.all([
@@ -137,128 +139,102 @@ export default function LaporanPage() {
     }
   }
 
-  const columns: Column<Penjualan>[] = [
-    { header: 'Nota', accessor: (r) => <span className="font-mono">{nomorNotaPenjualanLabel(r)}</span> },
-    { header: 'Tanggal', accessor: (r) => formatDate(r.TANGGAL) },
-    { header: 'Kasir', accessor: (r) => r.kasir?.NAMA ?? '-' },
-    { header: 'Metode', accessor: (r) => r.jenisBayar?.NAMA ?? '-' },
-    { header: 'Total', accessor: (r) => <span className="font-semibold">{formatRupiah(r.TOTAL)}</span> },
-  ];
+  const rp = formatRupiah;
+  const omzet = Number(pendapatan?.omzet ?? penjualan?.omzet ?? 0);
+  const modal = Number(pendapatan?.modal ?? 0);
+  const laba = Number(pendapatan?.laba ?? 0);
+  const ppn = Number(penjualan?.total_ppn ?? 0);
+  const service = Number(penjualan?.total_service ?? 0);
+  const margin = omzet > 0 ? (laba / omzet) * 100 : 0;
 
   return (
     <div>
-      <PageHeader title="Laporan Penjualan" description="Rekap omzet, transaksi, dan laba per periode" />
-      <Card className="mb-4"><CardBody>
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <FilterDate
-            awal={awal}
-            akhir={akhir}
-            onAwal={(v) => { setAwal(v); setPage(1); }}
-            onAkhir={(v) => { setAkhir(v); setPage(1); }}
-          />
-          <div className="flex flex-wrap gap-2">
-            <Button onClick={() => { setPage(1); run(1); }} loading={loading}><Search className="h-4 w-4" /> Tampilkan</Button>
-            {penjualan && pendapatan && (
-              <>
-                <Button variant="outline" onClick={handleExportExcel} loading={exporting === 'excel'}>
-                  <FileSpreadsheet className="h-4 w-4" /> Export Excel
-                </Button>
-                <Button variant="outline" onClick={handleExportPdf} loading={exporting === 'pdf'}>
-                  <FileText className="h-4 w-4" /> Export PDF
-                </Button>
-              </>
-            )}
-          </div>
+      <PageHeader title="Laporan Keuangan" description="Ringkasan omzet, laba, dan penjualan per periode" />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <FilterDate awal={awal} akhir={akhir} onAwal={setAwal} onAkhir={setAkhir} />
+        <div className="relative">
+          <Button variant="outline" onClick={() => setMenuOpen((o) => !o)} loading={!!exporting} disabled={!penjualan || !pendapatan}>
+            <Download className="h-4 w-4" /> Ekspor <ChevronDown className="h-4 w-4" />
+          </Button>
+          {menuOpen && (
+            <div className="absolute right-0 z-20 mt-1 w-44 overflow-hidden rounded-xl border border-line bg-white shadow-card">
+              <button className="flex w-full items-center gap-2 px-3 py-2.5 text-sm hover:bg-brand-50" onClick={() => { setMenuOpen(false); handleExportPdf(); }}>
+                <FileText className="h-4 w-4" /> Ekspor PDF
+              </button>
+              <button className="flex w-full items-center gap-2 px-3 py-2.5 text-sm hover:bg-brand-50" onClick={() => { setMenuOpen(false); handleExportExcel(); }}>
+                <FileSpreadsheet className="h-4 w-4" /> Ekspor Excel
+              </button>
+            </div>
+          )}
         </div>
-        {!isPro && (
-          <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-            Rekapitulasi laporan lengkap (laba kotor, per metode bayar, per kasir, produk terlaris, rekap harian/bulanan, export)
-            tersedia di paket <b>PRO</b> dan <b>BUSINESS</b>.
-          </p>
-        )}
-      </CardBody></Card>
+      </div>
 
       {loading && <LoadingState />}
 
-      {!loading && pendapatan && penjualan && (
-        <>
-          <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Omzet (bersih, tanpa PPN)" value={formatRupiah(penjualan.omzet)} icon={Wallet} tone="green" />
-            <StatCard label="Jumlah transaksi" value={penjualan.jumlah_transaksi} icon={Receipt} tone="brand" />
-            <StatCard label="PPN terkumpul" value={formatRupiah(penjualan.total_ppn)} icon={Receipt} tone="amber" />
-            <StatCard label="Laba kotor" value={formatRupiah(pendapatan.laba)} icon={TrendingUp} tone="green" />
-          </div>
-          <Card className="mb-4"><CardBody>
-            <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-              <div><p className="text-slate-400">Modal (HPP)</p><p className="font-bold text-slate-700">{formatRupiah(pendapatan.modal)}</p></div>
-              <div><p className="text-slate-400">Service charge</p><p className="font-bold text-slate-700">{formatRupiah(penjualan.total_service)}</p></div>
-              <div><p className="text-slate-400">PPN (titipan pajak)</p><p className="font-bold text-slate-700">{formatRupiah(penjualan.total_ppn)}</p></div>
-              <div><p className="text-slate-400">Total diterima (bruto)</p><p className="font-bold text-slate-700">{formatRupiah(penjualan.total_dibayar)}</p></div>
-            </div>
-            <p className="mt-2 text-xs text-slate-400">Omzet = penjualan bersih tanpa PPN &amp; service. PPN bukan pendapatan — disetor ke negara.</p>
-          </CardBody></Card>
+      {!loading && penjualan && pendapatan && (
+        <div className="space-y-4">
           <Card><CardBody>
-            <DataTable columns={columns} data={penjualan.data} rowKey={(r) => r.ID} emptyTitle="Tidak ada penjualan" showRowNumber startIndex={(page - 1) * 25} />
-            <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={(p) => { setPage(p); run(p); }} />
+            <p className="text-sm text-slate-500">Omzet periode ini</p>
+            <p className="mt-1 text-3xl font-extrabold text-ink">{rp(omzet)}</p>
+            <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+              <div><p className="text-slate-400">Transaksi</p><p className="font-bold text-slate-700">{penjualan.jumlah_transaksi}</p></div>
+              <div><p className="text-slate-400">Laba kotor</p><p className={cn('font-bold', laba < 0 ? 'text-rose-600' : 'text-slate-700')}>{rp(laba)}</p></div>
+              <div><p className="text-slate-400">Margin</p><p className="font-bold text-slate-700">{margin.toFixed(1)}%</p></div>
+            </div>
           </CardBody></Card>
 
-          {/* ===== Rekap lengkap (PRO/BUSINESS) ===== */}
-          {isPro && rekap && (
-            <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-              <Card><CardBody>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">Penjualan per metode pembayaran</h3>
-                <div className="space-y-1.5 text-sm">
-                  {rekap.per_metode_bayar.length === 0 && <p className="text-slate-400">Tidak ada data.</p>}
-                  {rekap.per_metode_bayar.map((m) => (
-                    <div key={m.metode} className="flex justify-between border-b border-slate-100 py-1">
-                      <span className="text-slate-600">{m.metode} <span className="text-slate-400">({m.jumlah_transaksi}x)</span></span>
-                      <span className="font-semibold text-slate-700">{formatRupiah(m.total)}</span>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Section title="Dari omzet ke laba" note="Laba kotor = omzet bersih dikurangi modal barang terjual.">
+              <Row label="Omzet bersih" value={rp(omzet)} />
+              <Row label="Modal (HPP)" value={`− ${rp(modal)}`} />
+              <Row label="Laba kotor" value={rp(laba)} total danger={laba < 0} />
+            </Section>
+            <Section title="Uang diterima" note="PPN disetor ke negara, bukan pendapatan toko.">
+              <Row label="Omzet bersih" value={rp(omzet)} />
+              <Row label="PPN" value={`+ ${rp(ppn)}`} />
+              <Row label="Service charge" value={`+ ${rp(service)}`} />
+              <Row label="Total diterima" value={rp(omzet + ppn + service)} total />
+            </Section>
+          </div>
+
+          {!isPro ? (
+            <Card><CardBody>
+              <p className="text-sm text-slate-500">Rekap per metode bayar, per kasir, produk terlaris, dan stok menipis tersedia di paket PRO dan BUSINESS.</p>
+            </CardBody></Card>
+          ) : rekap && (
+            <>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Section title="Penjualan per metode bayar">
+                  <Share rows={rekap.per_metode_bayar.map((m) => ({ key: m.metode, nama: m.metode, n: m.jumlah_transaksi, total: m.total }))} empty="Belum ada pembayaran di periode ini." />
+                </Section>
+                <Section title="Penjualan per kasir">
+                  <Share rows={rekap.per_kasir.map((k) => ({ key: String(k.id_user ?? k.kasir), nama: k.kasir, n: k.jumlah_transaksi, total: k.total }))} empty="Belum ada penjualan di periode ini." />
+                </Section>
+              </div>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Section title="Produk terlaris" note="Urut berdasarkan jumlah terjual.">
+                  {rekap.produk_terlaris.length === 0 && <p className="text-sm text-slate-400">Belum ada produk terjual di periode ini.</p>}
+                  {[...rekap.produk_terlaris].sort((a, b) => b.qty - a.qty).map((p, i) => (
+                    <div key={p.id_produk} className="flex items-center gap-3 border-b border-slate-100 py-2 text-sm last:border-0">
+                      <span className="w-5 text-slate-400">{i + 1}</span>
+                      <span className="min-w-0 flex-1"><span className="block truncate font-medium text-slate-700">{p.nama}</span><span className="text-xs text-slate-400">{rp(p.omzet)}</span></span>
+                      <span className="text-slate-500">{p.qty} terjual</span>
                     </div>
                   ))}
-                </div>
-              </CardBody></Card>
-
-              <Card><CardBody>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">Rekap penjualan per kasir</h3>
-                <div className="space-y-1.5 text-sm">
-                  {rekap.per_kasir.length === 0 && <p className="text-slate-400">Tidak ada data.</p>}
-                  {rekap.per_kasir.map((k) => (
-                    <div key={k.kasir} className="flex justify-between border-b border-slate-100 py-1">
-                      <span className="text-slate-600">{k.kasir} <span className="text-slate-400">({k.jumlah_transaksi}x)</span></span>
-                      <span className="font-semibold text-slate-700">{formatRupiah(k.total)}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardBody></Card>
-
-              <Card><CardBody>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">Produk terlaris</h3>
-                <div className="space-y-1.5 text-sm">
-                  {rekap.produk_terlaris.length === 0 && <p className="text-slate-400">Tidak ada data.</p>}
-                  {rekap.produk_terlaris.map((p) => (
-                    <div key={p.id_produk} className="flex justify-between border-b border-slate-100 py-1">
-                      <span className="text-slate-600">{p.nama} <span className="text-slate-400">({p.qty})</span></span>
-                      <span className="font-semibold text-slate-700">{formatRupiah(p.omzet)}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardBody></Card>
-
-              <Card><CardBody>
-                <h3 className="mb-2 text-sm font-semibold text-slate-700">Produk stok menipis</h3>
-                <div className="space-y-1.5 text-sm">
-                  {rekap.produk_stok_menipis.length === 0 && <p className="text-slate-400">Stok aman.</p>}
+                </Section>
+                <Section title="Perlu restock">
+                  {rekap.produk_stok_menipis.length === 0 && <p className="text-sm text-slate-400">Semua stok di atas batas minimum.</p>}
                   {rekap.produk_stok_menipis.map((p) => (
-                    <div key={p.id} className="flex justify-between border-b border-slate-100 py-1">
-                      <span className="text-slate-600">{p.nama}</span>
-                      <span className="font-semibold text-rose-600">sisa {p.stok}</span>
+                    <div key={p.id} className="flex justify-between border-b border-slate-100 py-2 text-sm last:border-0">
+                      <span className="text-slate-700">{p.nama}</span>
+                      {p.stok <= 0 ? <span className="font-semibold text-rose-600">Habis</span> : <span className="font-semibold text-orange-500">Sisa {p.stok}</span>}
                     </div>
                   ))}
-                </div>
-              </CardBody></Card>
-            </div>
+                </Section>
+              </div>
+            </>
           )}
-        </>
+        </div>
       )}
 
       <UpgradeModal
@@ -268,6 +244,47 @@ export default function LaporanPage() {
         description="Paket FREE tetap bisa melihat laporan penjualan di layar. Download laporan Excel dan PDF hanya tersedia untuk paket PRO atau BUSINESS."
         benefits={['Download laporan Excel (.xlsx)', 'Download laporan PDF siap cetak', 'Rekap laporan lengkap untuk analisis bisnis']}
       />
+    </div>
+  );
+}
+
+function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
+  return (
+    <Card><CardBody>
+      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
+      {note && <p className="mb-2 text-xs text-slate-400">{note}</p>}
+      <div className={note ? '' : 'mt-2'}>{children}</div>
+    </CardBody></Card>
+  );
+}
+
+function Row({ label, value, total, danger }: { label: string; value: string; total?: boolean; danger?: boolean }) {
+  return (
+    <div className={cn('flex justify-between py-1.5 text-sm', total && 'mt-1 border-t border-slate-200 pt-2 font-bold')}>
+      <span className="text-slate-600">{label}</span>
+      <span className={danger ? 'text-rose-600' : 'text-slate-800'}>{value}</span>
+    </div>
+  );
+}
+
+// Daftar nama + jumlah transaksi + total + persen porsi (bar), urut terbesar.
+function Share({ rows, empty }: { rows: { key: string; nama: string; n: number; total: number }[]; empty: string }) {
+  if (rows.length === 0) return <p className="text-sm text-slate-400">{empty}</p>;
+  const sum = rows.reduce((a, r) => a + Number(r.total), 0);
+  return (
+    <div className="space-y-3">
+      {[...rows].sort((a, b) => b.total - a.total).map((r) => {
+        const pct = sum > 0 ? (Number(r.total) / sum) * 100 : 0;
+        return (
+          <div key={r.key} className="text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-700">{r.nama} <span className="text-slate-400">({r.n}x)</span></span>
+              <span className="font-semibold text-slate-800">{formatRupiah(r.total)} <span className="font-normal text-slate-400">· {pct.toFixed(0)}%</span></span>
+            </div>
+            <div className="mt-1 h-1.5 rounded-full bg-slate-100"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
+          </div>
+        );
+      })}
     </div>
   );
 }

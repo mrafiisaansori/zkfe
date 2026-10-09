@@ -681,13 +681,10 @@ function buildAppPropsXml(sheets: ExcelSheetDefinition[]): string {
 function buildExcelSheets(report: ReportModel): ExcelSheetDefinition[] {
   return [
     { name: 'Ringkasan', rows: summaryRows(report), widths: [190, 155, 360, 130] },
-    { name: 'Transaksi', rows: transactionRows(report), widths: [50, 120, 115, 75, 160, 135, 105, 140, 120, 120, 120, 260] },
     { name: 'Metode Bayar', rows: namedTotalRows('Penjualan per Metode Pembayaran', report.perMetode), widths: [230, 135, 150, 110] },
     { name: 'Kasir', rows: namedTotalRows('Rekap Penjualan per Kasir', report.perKasir), widths: [230, 135, 150, 110] },
     { name: 'Produk Terlaris', rows: productRows('Produk Terlaris', report.produkTerlaris, report.hasCompleteRekap), widths: [310, 110, 150, 150] },
     { name: 'Stok Menipis', rows: lowStockRows('Produk Stok Menipis', report.stokMenipis, report.hasCompleteRekap), widths: [310, 110, 150] },
-    { name: 'Harian', rows: periodRows('Rekap Harian', report.harian), widths: [150, 135, 150, 150] },
-    { name: 'Bulanan', rows: periodRows('Rekap Bulanan', report.bulanan), widths: [160, 135, 150, 150] },
   ];
 }
 
@@ -886,15 +883,6 @@ function tableHtml(
 
 function buildPdfHtml(report: ReportModel): string {
   const s = report.summary;
-  const transaksiRows = report.transaksi.map((row, index) => [
-    index + 1,
-    notaLabel(row),
-    formatReportDate(row.TANGGAL),
-    row.JAM || '-',
-    row.kasir?.NAMA ?? '-',
-    row.jenisBayar?.NAMA ?? '-',
-    formatRupiah(row.TOTAL),
-  ]);
   const completeMessage = 'Data ini tersedia pada laporan lengkap PRO/BUSINESS.';
 
   return `<!doctype html>
@@ -1119,19 +1107,6 @@ function buildPdfHtml(report: ReportModel): string {
     )}
 
     ${tableHtml(
-      'Rekap Harian',
-      ['Tanggal', 'Transaksi', 'Total', 'Rata-rata'],
-      report.harian.map((row) => [
-        row.periode,
-        formatNumber(row.jumlahTransaksi),
-        formatRupiah(row.total),
-        formatRupiah(row.jumlahTransaksi > 0 ? row.total / row.jumlahTransaksi : 0),
-      ]),
-      'Tidak ada data harian.',
-      [1, 2, 3],
-    )}
-
-    ${tableHtml(
       'Produk Terlaris',
       ['Produk', 'Qty', 'Omzet'],
       report.produkTerlaris.map((row) => [row.nama, formatNumber(row.qty), formatRupiah(row.omzet)]),
@@ -1145,14 +1120,6 @@ function buildPdfHtml(report: ReportModel): string {
       report.stokMenipis.map((row) => [row.nama, formatNumber(row.stok), formatRupiah(row.hargaJual)]),
       report.hasCompleteRekap ? 'Tidak ada produk stok menipis.' : completeMessage,
       [1, 2],
-    )}
-
-    ${tableHtml(
-      'Daftar Transaksi',
-      ['No', 'Nota', 'Tanggal', 'Jam', 'Kasir', 'Metode', 'Total'],
-      transaksiRows,
-      'Tidak ada transaksi pada periode ini.',
-      [0, 6],
     )}
 
     <footer>
