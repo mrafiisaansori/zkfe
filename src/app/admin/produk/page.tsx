@@ -21,6 +21,7 @@ export default function ProdukPage() {
   const [kategori, setKategori] = useState<Kategori[]>([]);
   const [satuan, setSatuan] = useState<Satuan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -83,7 +84,7 @@ export default function ProdukPage() {
   }
 
   const load = useCallback(async (q = '', pageNo = 1) => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const [p, k] = await Promise.all([
         produkService.listPage({ search: q || undefined, page: pageNo, limit: 25 }),
@@ -92,7 +93,7 @@ export default function ProdukPage() {
       setProduk(p.data || []);
       setMeta(p.meta);
       if (k) { setKategori(k); kategoriLoaded.current = true; }
-    } catch (err) { toast.error(getErrorMessage(err)); }
+    } catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
 
@@ -187,7 +188,7 @@ export default function ProdukPage() {
             </div>
             <Badge tone="blue">{meta?.total ?? produk.length} produk</Badge>
           </div>
-          <DataTable columns={columns} data={produk} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada produk" showRowNumber startIndex={(page - 1) * 25} />
+          <DataTable error={error} onRetry={() => load(search, page)} columns={columns} data={produk} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada produk" showRowNumber startIndex={(page - 1) * 25} />
           <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
         </CardBody>
       </Card>

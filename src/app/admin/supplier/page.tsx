@@ -14,6 +14,7 @@ import { usePageLoading } from '@/hooks/usePageLoading';
 export default function SupplierPage() {
   const [data, setData] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -28,7 +29,7 @@ export default function SupplierPage() {
   const [form, setForm] = useState<SupplierInput>({ nama: '', no_telp: '', email: '', alamat: '', catatan: '', status: 1 });
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await supplierService.listPage({
         search: search || undefined,
@@ -39,7 +40,7 @@ export default function SupplierPage() {
       setData(res.data || []);
       setMeta(res.meta);
     }
-    catch (err) { toast.error(getErrorMessage(err)); }
+    catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, [search, status, page]);
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
@@ -101,7 +102,7 @@ export default function SupplierPage() {
       </CardBody></Card>
 
       <Card><CardBody>
-        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada supplier" showRowNumber startIndex={(page - 1) * 25} />
+        <DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada supplier" showRowNumber startIndex={(page - 1) * 25} />
         <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 

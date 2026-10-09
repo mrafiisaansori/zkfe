@@ -1,16 +1,15 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { AlertTriangle, Package, Receipt, ShoppingBag, TrendingUp, Star } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { UpgradeBanner } from '@/components/layout/UpgradeBanner';
 import { ExpiryWarningBanner } from '@/components/layout/ExpiryWarningBanner';
-import { StatCard } from '@/components/layout/StatCard';
-import { Card, CardBody, LoadingState, ErrorState, Badge, Skeleton, StatCardSkeleton } from '@/components/ui';
+import { Section, Row, ProdukTerlarisList, RestockList, VarianTerlarisList } from '@/components/report/parts';
+import { Card, CardBody, ErrorState, Skeleton, StatCardSkeleton } from '@/components/ui';
 import { dashboardService, getErrorMessage } from '@/services';
 import { useAuthStore } from '@/stores/authStore';
 import type { DashboardSummary } from '@/types';
-import { formatRupiah, formatDate } from '@/utils/format';
+import { formatRupiah } from '@/utils/format';
 import { nomorNotaPenjualanLabel } from '@/utils/nomorNota';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { GudangDashboard } from './GudangDashboard';
@@ -63,112 +62,80 @@ function FinanceDashboard() {
   if (error) return <ErrorState message={error} onRetry={load} />;
   if (!summary) return null;
 
+  const rp = formatRupiah;
+  const omzet = Number(summary.pendapatan_hari_ini) || 0;
+  const ppn = Number(summary.ppn_hari_ini) || 0;
+  const service = Number(summary.service_hari_ini) || 0;
+  const tahun = new Date().getFullYear();
+  const restock = (
+    <Section title="Perlu restock">
+      <RestockList rows={summary.stok_menipis.map((p) => ({ id: p.ID, nama: p.NAMA, stok: p.STOK }))} />
+    </Section>
+  );
+
   return (
-    <div>
-      <PageHeader title="Dashboard" description={`Ringkasan operasional toko · ${formatDate(summary.tanggal)}`} />
+    <div className="space-y-4">
+      <PageHeader title="Dashboard" description={new Date(`${summary.tanggal}T00:00:00`).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
       <ExpiryWarningBanner />
       <UpgradeBanner />
-      {/* Headline: omzet bersih, transaksi, laba kotor, stok menipis */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Omzet hari ini (tanpa PPN)" value={formatRupiah(summary.pendapatan_hari_ini)} icon={ShoppingBag} tone="green" />
-        <StatCard label="Transaksi hari ini" value={summary.transaksi_hari_ini} icon={Receipt} tone="brand" />
-        <StatCard label="Laba kotor hari ini" value={formatRupiah(summary.laba_hari_ini ?? 0)} icon={TrendingUp} tone="amber" />
-        <StatCard label="Stok menipis" value={summary.stok_menipis.length} icon={AlertTriangle} tone="red" />
-      </div>
 
-      {/* Angka pendukung */}
-      <Card className="mt-4"><CardBody>
-        <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-          <div><p className="text-slate-400">Total diterima (bruto)</p><p className="font-bold text-slate-800">{formatRupiah(summary.total_dibayar_hari_ini ?? 0)}</p></div>
-          <div><p className="text-slate-400">PPN terkumpul</p><p className="font-bold text-slate-800">{formatRupiah(summary.ppn_hari_ini ?? 0)}</p></div>
-          <div><p className="text-slate-400">Service charge</p><p className="font-bold text-slate-800">{formatRupiah(summary.service_hari_ini ?? 0)}</p></div>
-          <div><p className="text-slate-400">Rata-rata / transaksi</p><p className="font-bold text-slate-800">{formatRupiah(summary.rata_rata_transaksi ?? 0)}</p></div>
+      <Card><CardBody>
+        <p className="text-sm text-slate-500">Omzet hari ini</p>
+        <p className="mt-1 text-3xl font-extrabold text-ink">{rp(omzet)}</p>
+        <div className="mt-4 grid grid-cols-3 gap-3 text-sm">
+          <div><p className="text-slate-400">Transaksi</p><p className="font-bold text-slate-700">{summary.transaksi_hari_ini}</p></div>
+          <div><p className="text-slate-400">Laba kotor</p><p className="font-bold text-slate-700">{rp(summary.laba_hari_ini ?? 0)}</p></div>
+          <div><p className="text-slate-400">Rata-rata</p><p className="font-bold text-slate-700">{rp(summary.rata_rata_transaksi ?? 0)}</p></div>
         </div>
-        <p className="mt-2 text-xs text-slate-400">Omzet = penjualan bersih (tanpa PPN &amp; service). PPN adalah titipan pajak, bukan pendapatan.</p>
       </CardBody></Card>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardBody>
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <h3 className="font-semibold text-slate-900">Omzet & Laba {new Date().getFullYear()}</h3>
-                <p className="text-sm text-slate-500">Performa penjualan bulanan.</p>
-              </div>
-              <Badge tone="blue">Real-time</Badge>
-            </div>
-            <div className="h-72 w-full">
-              <DashboardYearChart data={chart} />
-            </div>
-          </CardBody>
-        </Card>
+      {summary.stok_menipis.length > 0 && restock}
 
-        <Card>
-          <CardBody>
-            <h3 className="mb-1 font-semibold text-slate-900">Produk stok menipis</h3>
-            <p className="mb-4 text-sm text-slate-500">Prioritaskan restock sebelum transaksi ramai.</p>
-            {summary.stok_menipis.length === 0 ? (
-              <p className="rounded-xl bg-emerald-50 py-8 text-center text-sm font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">Semua stok aman</p>
-            ) : (
-              <ul className="space-y-2">
-                {summary.stok_menipis.map((p) => (
-                  <li key={p.ID} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
-                    <span className="truncate text-sm font-semibold text-slate-700">{p.NAMA}</span>
-                    <Badge tone={p.STOK <= 0 ? 'red' : 'amber'}>{p.STOK}</Badge>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-      </div>
+      <Section title="Uang diterima hari ini" note="PPN adalah titipan pajak, bukan pendapatan.">
+        <Row label="Omzet bersih" value={rp(omzet)} />
+        <Row label="PPN terkumpul" value={`+ ${rp(ppn)}`} />
+        <Row label="Service charge" value={`+ ${rp(service)}`} />
+        <Row label="Total diterima" value={rp(summary.total_dibayar_hari_ini ?? omzet + ppn + service)} total />
+      </Section>
 
-      {/* Produk terlaris & transaksi terbaru */}
-      <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card><CardBody>
-          <h3 className="mb-1 flex items-center gap-2 font-semibold text-slate-900"><Star className="h-4 w-4 text-amber-500" /> Produk terlaris bulan ini</h3>
-          <p className="mb-4 text-sm text-slate-500">5 produk dengan penjualan terbanyak.</p>
-          {(summary.produk_terlaris?.length ?? 0) === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-400">Belum ada penjualan bulan ini</p>
-          ) : (
-            <ul className="space-y-2">
-              {summary.produk_terlaris!.map((p, i) => (
-                <li key={p.id_produk} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-50 text-xs font-bold text-primary">{i + 1}</span>
-                    <span className="truncate text-sm font-semibold text-slate-700">{p.nama}</span>
-                  </span>
-                  <span className="shrink-0 text-right">
-                    <span className="block text-sm font-bold text-slate-800">{p.qty} terjual</span>
-                    <span className="block text-xs text-slate-400">{formatRupiah(p.omzet)}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardBody></Card>
+      {summary.stok_menipis.length === 0 && restock}
 
-        <Card><CardBody>
-          <h3 className="mb-1 flex items-center gap-2 font-semibold text-slate-900"><Receipt className="h-4 w-4 text-primary" /> Transaksi terbaru</h3>
-          <p className="mb-4 text-sm text-slate-500">5 transaksi terakhir.</p>
+      <Card><CardBody>
+        <h3 className="font-semibold text-slate-900">Omzet &amp; laba per bulan, {tahun}</h3>
+        <p className="mb-3 text-sm text-slate-500">Total omzet tahun ini {rp(chart.reduce((a, d) => a + d.omzet, 0))}</p>
+        <div className="h-72 w-full">
+          <DashboardYearChart data={chart} currentMonth={new Date().getMonth()} />
+        </div>
+      </CardBody></Card>
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Section title="Terlaris bulan ini" note="Urut berdasarkan jumlah terjual">
+          <ProdukTerlarisList rows={summary.produk_terlaris ?? []} />
+        </Section>
+        <Section title="Transaksi terakhir">
           {(summary.transaksi_terbaru?.length ?? 0) === 0 ? (
-            <p className="py-6 text-center text-sm text-slate-400">Belum ada transaksi</p>
+            <p className="text-sm text-slate-400">Belum ada transaksi.</p>
           ) : (
-            <ul className="space-y-2">
+            <ul>
               {summary.transaksi_terbaru!.map((t) => (
-                <li key={t.ID} className="flex items-center justify-between rounded-xl border border-slate-200 px-3 py-2.5">
+                <li key={t.ID} className="flex items-center justify-between gap-3 border-b border-slate-100 py-2 last:border-0">
                   <span className="min-w-0">
                     <span className="block font-mono text-xs text-slate-400">{nomorNotaPenjualanLabel(t)}</span>
-                    <span className="block truncate text-sm text-slate-600">{t.kasir?.NAMA ?? '-'} · {formatDate(t.TANGGAL)}, {t.JAM?.slice(0, 5)}</span>
+                    <span className="block truncate text-sm text-slate-600">{t.JAM?.slice(0, 5)} · {t.kasir?.NAMA ?? '-'}{t.jenisBayar?.NAMA ? ` · ${t.jenisBayar.NAMA}` : ''}</span>
                   </span>
-                  <span className="shrink-0 text-sm font-bold text-slate-800">{formatRupiah(t.TOTAL)}</span>
+                  <span className="shrink-0 text-sm font-bold text-slate-800">{rp(t.TOTAL)}</span>
                 </li>
               ))}
             </ul>
           )}
-        </CardBody></Card>
+        </Section>
       </div>
+
+      {(summary.varian_terlaris?.length ?? 0) > 0 && (
+        <Section title="Varian terlaris bulan ini" note="Urut berdasarkan jumlah dipilih">
+          <VarianTerlarisList rows={summary.varian_terlaris!} />
+        </Section>
+      )}
     </div>
   );
 }
-   

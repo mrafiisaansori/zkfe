@@ -11,6 +11,7 @@ import { formatRupiah, todayISO } from '@/utils/format';
 import { exportFinancialReportExcel, exportFinancialReportPdf } from '@/utils/financialReportExport';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { cn } from '@/utils/cn';
+import { Section, Row, Share, ProdukTerlarisList, RestockList, VarianTerlarisList } from '@/components/report/parts';
 
 const PDF_LOADING_HTML = `<!doctype html>
 <html lang="id">
@@ -151,7 +152,10 @@ export default function LaporanPage() {
     <div>
       <PageHeader title="Laporan Keuangan" description="Ringkasan omzet, laba, dan penjualan per periode" />
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <FilterDate awal={awal} akhir={akhir} onAwal={setAwal} onAkhir={setAkhir} />
+        <div>
+          <FilterDate awal={awal} akhir={akhir} onAwal={setAwal} onAkhir={setAkhir} />
+          <p className="mt-2 text-sm font-medium text-slate-500">{rangeLabel(awal, akhir)}</p>
+        </div>
         <div className="relative">
           <Button variant="outline" onClick={() => setMenuOpen((o) => !o)} loading={!!exporting} disabled={!penjualan || !pendapatan}>
             <Download className="h-4 w-4" /> Ekspor <ChevronDown className="h-4 w-4" />
@@ -210,28 +214,18 @@ export default function LaporanPage() {
                 <Section title="Penjualan per kasir">
                   <Share rows={rekap.per_kasir.map((k) => ({ key: String(k.id_user ?? k.kasir), nama: k.kasir, n: k.jumlah_transaksi, total: k.total }))} empty="Belum ada penjualan di periode ini." />
                 </Section>
-              </div>
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Section title="Produk terlaris" note="Urut berdasarkan jumlah terjual.">
-                  {rekap.produk_terlaris.length === 0 && <p className="text-sm text-slate-400">Belum ada produk terjual di periode ini.</p>}
-                  {[...rekap.produk_terlaris].sort((a, b) => b.qty - a.qty).map((p, i) => (
-                    <div key={p.id_produk} className="flex items-center gap-3 border-b border-slate-100 py-2 text-sm last:border-0">
-                      <span className="w-5 text-slate-400">{i + 1}</span>
-                      <span className="min-w-0 flex-1"><span className="block truncate font-medium text-slate-700">{p.nama}</span><span className="text-xs text-slate-400">{rp(p.omzet)}</span></span>
-                      <span className="text-slate-500">{p.qty} terjual</span>
-                    </div>
-                  ))}
+                <Section title="Produk terlaris" note="Urut berdasarkan jumlah terjual">
+                  <ProdukTerlarisList rows={rekap.produk_terlaris} />
                 </Section>
                 <Section title="Perlu restock">
-                  {rekap.produk_stok_menipis.length === 0 && <p className="text-sm text-slate-400">Semua stok di atas batas minimum.</p>}
-                  {rekap.produk_stok_menipis.map((p) => (
-                    <div key={p.id} className="flex justify-between border-b border-slate-100 py-2 text-sm last:border-0">
-                      <span className="text-slate-700">{p.nama}</span>
-                      {p.stok <= 0 ? <span className="font-semibold text-rose-600">Habis</span> : <span className="font-semibold text-orange-500">Sisa {p.stok}</span>}
-                    </div>
-                  ))}
+                  <RestockList rows={rekap.produk_stok_menipis} />
                 </Section>
               </div>
+              {(rekap.varian_terlaris?.length ?? 0) > 0 && (
+                <Section title="Varian terlaris" note="Urut berdasarkan jumlah dipilih">
+                  <VarianTerlarisList rows={rekap.varian_terlaris!} />
+                </Section>
+              )}
             </>
           )}
         </div>
@@ -248,43 +242,8 @@ export default function LaporanPage() {
   );
 }
 
-function Section({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
-  return (
-    <Card><CardBody>
-      <h3 className="text-sm font-semibold text-slate-700">{title}</h3>
-      {note && <p className="mb-2 text-xs text-slate-400">{note}</p>}
-      <div className={note ? '' : 'mt-2'}>{children}</div>
-    </CardBody></Card>
-  );
-}
-
-function Row({ label, value, total, danger }: { label: string; value: string; total?: boolean; danger?: boolean }) {
-  return (
-    <div className={cn('flex justify-between py-1.5 text-sm', total && 'mt-1 border-t border-slate-200 pt-2 font-bold')}>
-      <span className="text-slate-600">{label}</span>
-      <span className={danger ? 'text-rose-600' : 'text-slate-800'}>{value}</span>
-    </div>
-  );
-}
-
-// Daftar nama + jumlah transaksi + total + persen porsi (bar), urut terbesar.
-function Share({ rows, empty }: { rows: { key: string; nama: string; n: number; total: number }[]; empty: string }) {
-  if (rows.length === 0) return <p className="text-sm text-slate-400">{empty}</p>;
-  const sum = rows.reduce((a, r) => a + Number(r.total), 0);
-  return (
-    <div className="space-y-3">
-      {[...rows].sort((a, b) => b.total - a.total).map((r) => {
-        const pct = sum > 0 ? (Number(r.total) / sum) * 100 : 0;
-        return (
-          <div key={r.key} className="text-sm">
-            <div className="flex justify-between">
-              <span className="text-slate-700">{r.nama} <span className="text-slate-400">({r.n}x)</span></span>
-              <span className="font-semibold text-slate-800">{formatRupiah(r.total)} <span className="font-normal text-slate-400">· {pct.toFixed(0)}%</span></span>
-            </div>
-            <div className="mt-1 h-1.5 rounded-full bg-slate-100"><div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} /></div>
-          </div>
-        );
-      })}
-    </div>
-  );
+// "1 Okt – 9 Okt 2026"
+function rangeLabel(awal: string, akhir: string) {
+  const f = (d: string, y: boolean) => new Date(`${d}T00:00:00`).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', ...(y ? { year: 'numeric' } : {}) });
+  return awal === akhir ? f(awal, true) : `${f(awal, false)} – ${f(akhir, true)}`;
 }

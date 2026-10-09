@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Printer } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card, CardBody, Button, LoadingState, ErrorState, Badge } from '@/components/ui';
+import { TrxItems } from '@/components/pos/TrxItems';
 import { Receipt, type ReceiptSize } from '@/components/pos/Receipt';
 import { penjualanService, identitasService, getErrorMessage } from '@/services';
 import type { Penjualan, Identitas } from '@/types';
@@ -98,23 +99,7 @@ export default function DetailTransaksiPage() {
               Dari Open Bill {trx.open_bill.no_bill} · Dibuka oleh {trx.open_bill.dibuka_oleh ?? '-'}
             </p>
           )}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead><tr className="border-b text-xs uppercase text-slate-500">
-                <th className="py-2">Produk</th><th className="py-2 text-right">Harga</th><th className="py-2 text-center">Qty</th><th className="py-2 text-right">Subtotal</th>
-              </tr></thead>
-              <tbody>
-                {trx.detail?.map((d) => (
-                  <tr key={d.ID} className="border-b border-slate-100">
-                    <td className="py-2">{d.produk?.NAMA ?? `#${d.ID_PRODUK}`}</td>
-                    <td className="py-2 text-right">{formatRupiah(d.HARGA_JUAL)}</td>
-                    <td className="py-2 text-center">{d.QTY}</td>
-                    <td className="py-2 text-right font-medium">{formatRupiah(d.HARGA_JUAL * d.QTY)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <TrxItems trx={trx} />
           <div className="mt-4 flex flex-col items-end gap-1 text-sm">
             {Number(trx.DISKON) > 0 && <p className="text-slate-500">Diskon: {formatRupiah(trx.DISKON)}</p>}
             <p className="text-lg font-bold text-brand-600 dark:text-accent">Total: {formatRupiah(trx.TOTAL)}</p>

@@ -37,12 +37,13 @@ export default function LaporanClosingPage() {
   const [tanggal, setTanggal] = useState(todayISO());
   const [report, setReport] = useState<DailyReport | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   usePageLoading(loading);
 
   const load = useCallback(async (tgl: string) => {
-    setLoading(true);
+    setLoading(true); setError('');
     try { setReport(await kasShiftService.reportDaily(tgl)); }
-    catch (err) { toast.error(getErrorMessage(err)); }
+    catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
 
@@ -105,7 +106,7 @@ export default function LaporanClosingPage() {
               <span className="text-amber-600 font-semibold"> Lebih</span> berarti uang fisik berlebih.
             </p>
           </div>
-          <DataTable
+          <DataTable error={error} onRetry={() => load(tanggal)}
             columns={columns}
             data={report?.shift || []}
             loading={loading}

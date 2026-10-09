@@ -7,7 +7,7 @@ export function ErrorState({ message = 'Gagal memuat data', onRetry }: { message
         <AlertTriangle className="h-6 w-6" />
       </span>
       <p className="max-w-md text-sm text-slate-600">{message}</p>
-      {onRetry && <Button variant="outline" size="sm" onClick={onRetry}>Coba lagi</Button>}
+      {onRetry && <Button variant="outline" size="sm" onClick={onRetry}>Muat ulang</Button>}
     </div>
   );
 }

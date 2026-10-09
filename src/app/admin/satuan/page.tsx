@@ -12,6 +12,7 @@ import { usePageLoading } from '@/hooks/usePageLoading';
 export default function SatuanPage() {
   const [data, setData] = useState<Satuan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Satuan | null>(null);
@@ -20,9 +21,9 @@ export default function SatuanPage() {
   const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try { setData((await satuanService.list()) || []); }
-    catch (err) { toast.error(getErrorMessage(err)); }
+    catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -58,7 +59,7 @@ export default function SatuanPage() {
     <div>
       <PageHeader title="Satuan" description="Satuan penjualan produk (Pcs, Box, Dus, Kg, Liter, Botol, dll)"
         action={<Button onClick={() => { setEditing(null); setFormOpen(true); }}><Plus className="h-4 w-4" /> Tambah</Button>} />
-      <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
+      <Card><CardBody><DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
 
       <Modal open={formOpen} onClose={() => { setFormOpen(false); setEditing(null); }} title={editing ? 'Edit Satuan' : 'Tambah Satuan'} size="sm">
         <SatuanForm initial={editing} loading={saving} onSubmit={handleSubmit} onCancel={() => { setFormOpen(false); setEditing(null); }} />

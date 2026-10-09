@@ -18,6 +18,7 @@ export default function VoucherPage() {
   const isPro = user?.merchant?.plan === 'PRO' || user?.merchant?.plan === 'BUSINESS';
   const [data, setData] = useState<Voucher[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Voucher | null>(null);
@@ -31,9 +32,9 @@ export default function VoucherPage() {
   // (termasuk setelah PRO turun ke FREE) - cuma bikin voucher BARU yang PRO-only.
   const load = useCallback(async () => {
     if (!user) { setLoading(false); return; }
-    setLoading(true);
+    setLoading(true); setError('');
     try { setData((await voucherService.list()) || []); }
-    catch (err) { toast.error(getErrorMessage(err)); }
+    catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, [user]);
   useEffect(() => { load(); }, [load]);
@@ -89,7 +90,7 @@ export default function VoucherPage() {
           <Button className="mt-5" onClick={() => setUpgradeOpen(true)}>Upgrade ke PRO</Button>
         </CardBody></Card>
       )}
-      <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
+      <Card><CardBody><DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
 
       <Modal open={formOpen} onClose={() => setFormOpen(false)} title={editing ? 'Edit Voucher' : 'Tambah Voucher'} size="sm"
         footer={<><Button variant="outline" onClick={() => setFormOpen(false)} disabled={saving}>Batal</Button><Button onClick={save} loading={saving}>Simpan</Button></>}>

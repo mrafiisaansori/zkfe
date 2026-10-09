@@ -23,6 +23,7 @@ export default function MemberPage() {
   const isPro = user?.merchant?.plan === 'PRO' || user?.merchant?.plan === 'BUSINESS';
   const [data, setData] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
@@ -37,7 +38,7 @@ export default function MemberPage() {
 
   const load = useCallback(async () => {
     if (!isPro) { setLoading(false); return; }
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await memberService.list({
         search: search || undefined,
@@ -47,7 +48,7 @@ export default function MemberPage() {
       });
       setData(res.data || []);
       setMeta(res.meta);
-    } catch (err) { toast.error(getErrorMessage(err)); }
+    } catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, [search, status, page, isPro]);
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
@@ -121,7 +122,7 @@ export default function MemberPage() {
       </CardBody></Card>
 
       <Card><CardBody>
-        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada member" showRowNumber startIndex={(page - 1) * 25} />
+        <DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada member" showRowNumber startIndex={(page - 1) * 25} />
         <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 

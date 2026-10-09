@@ -53,8 +53,14 @@ export async function buildReceiptEscPos({ trx, namaToko, alamatToko, logoUrl, b
   for (const d of items) {
     const lineDiskon = Number(d.DISKON) || 0;
     lines.push(truncate(d.produk?.NAMA ?? `#${d.ID_PRODUK}`, width));
-    if (d.MODIFIER) lines.push(truncate(d.MODIFIER, width));
-    lines.push(twoCol(`${d.QTY} x ${formatRupiah(d.HARGA_JUAL)}`, formatRupiah(d.HARGA_JUAL * d.QTY), width));
+    if (d.MODIFIER_DETAIL?.length) {
+      const dasar = d.HARGA_DASAR ?? d.HARGA_JUAL;
+      lines.push(twoCol(`${d.QTY} x ${formatRupiah(dasar)}`, formatRupiah(dasar * d.QTY), width));
+      for (const o of d.MODIFIER_DETAIL) lines.push(twoCol(truncate(`  + ${o.nama}`, width - 10), formatRupiah(o.harga * d.QTY), width));
+    } else {
+      if (d.MODIFIER) lines.push(truncate(d.MODIFIER, width));
+      lines.push(twoCol(`${d.QTY} x ${formatRupiah(d.HARGA_JUAL)}`, formatRupiah(d.HARGA_JUAL * d.QTY), width));
+    }
     if (lineDiskon > 0) lines.push(twoCol('  diskon item', '- ' + formatRupiah(lineDiskon), width));
   }
 

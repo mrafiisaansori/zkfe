@@ -15,6 +15,25 @@ const CANDIDATE_SERVICES = [
 ];
 
 let cachedCharacteristic: BluetoothRemoteGATTCharacteristic | null = null;
+const LAST_PRINTER_KEY = 'zk:lastBlePrinterId';
+
+function rememberPrinter(id: string) { try { localStorage.setItem(LAST_PRINTER_KEY, id); } catch { /* storage diblokir */ } }
+function forgetPrinter() { try { localStorage.removeItem(LAST_PRINTER_KEY); } catch { /* storage diblokir */ } }
+
+/** Sambung ulang diam-diam ke printer terakhir yang berhasil (tanpa dialog pilih). Butuh navigator.bluetooth.getDevices (Chrome/Edge). */
+async function reconnectLastPrinter(): Promise<boolean> {
+  try {
+    const id = localStorage.getItem(LAST_PRINTER_KEY);
+    if (!id || !('getDevices' in navigator.bluetooth!)) return false;
+    const devices: BluetoothDevice[] = await (navigator.bluetooth as unknown as { getDevices(): Promise<BluetoothDevice[]> }).getDevices();
+    const device = devices.find((d) => (d as BluetoothDevice & { id: string }).id === id);
+    const server = await device?.gatt?.connect();
+    const characteristic = server && await findWritableCharacteristic(server);
+    if (!characteristic) return false;
+    cachedCharacteristic = characteristic;
+    return true;
+  } catch { return false; }
+}
 
 /** Firefox & Safari tidak pernah mengimplementasikan Web Bluetooth (bukan soal versi/flag). */
 export function isWebBluetoothSupported() {
@@ -57,6 +76,7 @@ export async function connectBluetoothPrinter(): Promise<{ ok: boolean; reason?:
       return { ok: false, reason: `Printer "${device.name || '?'}" tersambung tapi service ESC/POS-nya tidak dikenali (UUID beda dari yang didukung).` };
     }
     cachedCharacteristic = characteristic;
+    rememberPrinter((device as BluetoothDevice & { id: string }).id);
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -71,16 +91,18 @@ export function isBluetoothPrinterConnected() {
 
 /** Kirim byte ESC/POS. Return false kalau belum ada printer terhubung (caller fallback ke cetak biasa). */
 export async function printViaBluetooth(bytes: Uint8Array): Promise<boolean> {
-  if (!cachedCharacteristic) return false;
+  if (!cachedCharacteristic && !(await reconnectLastPrinter())) return false;
+  const characteristic = cachedCharacteristic!;
   try {
     // Chunk 180 byte — batas umum MTU BLE write, printer murah sering tidak nego MTU lebih besar.
     for (let i = 0; i < bytes.length; i += 180) {
-      await cachedCharacteristic.writeValue(bytes.slice(i, i + 180));
+      await characteristic.writeValue(bytes.slice(i, i + 180));
     }
     return true;
   } catch (err) {
     console.error('printViaBluetooth gagal:', err);
     cachedCharacteristic = null;
+    forgetPrinter();
     return false;
   }
 }

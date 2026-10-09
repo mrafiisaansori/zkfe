@@ -39,6 +39,14 @@ interface ProductRow {
   nama: string;
   qty: number;
   omzet: number;
+  omzetVarian: number;
+}
+
+interface VariantRow {
+  nama: string;
+  grup: string;
+  qty: number;
+  omzet: number;
 }
 
 interface LowStockRow {
@@ -66,6 +74,7 @@ interface ReportModel {
   perMetode: NamedTotalRow[];
   perKasir: NamedTotalRow[];
   produkTerlaris: ProductRow[];
+  varianTerlaris: VariantRow[];
   stokMenipis: LowStockRow[];
   harian: PeriodTotalRow[];
   bulanan: PeriodTotalRow[];
@@ -248,6 +257,13 @@ function buildReportModel(input: FinancialReportExportInput): ReportModel {
       nama: row.nama,
       qty: row.qty,
       omzet: row.omzet,
+      omzetVarian: row.omzet_varian ?? 0,
+    })) ?? [],
+    varianTerlaris: input.rekap?.varian_terlaris?.map((row) => ({
+      nama: row.nama,
+      grup: row.grup ?? '-',
+      qty: row.qty,
+      omzet: row.omzet,
     })) ?? [],
     stokMenipis: input.rekap?.produk_stok_menipis?.map((row) => ({
       nama: row.nama,
@@ -306,17 +322,13 @@ function summaryRows(report: ReportModel): ExcelRow[] {
     sectionRow('Ringkasan Utama', 3),
     headerRow(['Indikator', 'Nilai', 'Catatan']),
     [{ value: 'Omzet bersih', style: 'Label' }, { value: s.omzetBersih, style: 'Currency' }, { value: 'Penjualan tanpa PPN dan service charge' }],
-    [{ value: 'Penerimaan bruto', style: 'Label' }, { value: s.penerimaanBruto, style: 'Currency' }, { value: 'Total dibayar pelanggan' }],
-    [{ value: 'Total transaksi', style: 'Label' }, { value: s.totalTransaksi, style: 'Number' }, { value: 'Jumlah nota sah' }],
-    [{ value: 'Rata-rata transaksi', style: 'Label' }, { value: s.rataRataTransaksi, style: 'Currency' }, { value: 'Penerimaan bruto dibagi transaksi' }],
-    [{ value: 'HPP / modal', style: 'Label' }, { value: s.totalModal, style: 'Currency' }, { value: 'Total harga beli barang terjual' }],
-    [{ value: 'Laba kotor', style: 'Label' }, { value: s.labaKotor, style: 'CurrencyGood' }, { value: `${s.marginLaba.toFixed(1)}% dari omzet bersih` }],
-    [{ value: 'PPN terkumpul', style: 'Label' }, { value: s.ppn, style: 'Currency' }, { value: 'Titipan pajak, bukan pendapatan' }],
+    [{ value: 'Transaksi', style: 'Label' }, { value: s.totalTransaksi, style: 'Number' }, { value: 'Jumlah nota sah' }],
+    [{ value: 'Modal (HPP)', style: 'Label' }, { value: s.totalModal, style: 'Currency' }, { value: 'Modal barang terjual' }],
+    [{ value: 'Laba kotor', style: 'Label' }, { value: s.labaKotor, style: 'CurrencyGood' }, { value: 'Omzet bersih dikurangi modal' }],
+    [{ value: 'Margin', style: 'Label' }, { value: s.marginLaba / 100, style: 'Percent' }, { value: 'Laba kotor dibagi omzet bersih' }],
+    [{ value: 'PPN', style: 'Label' }, { value: s.ppn, style: 'Currency' }, { value: 'Disetor ke negara, bukan pendapatan toko' }],
     [{ value: 'Service charge', style: 'Label' }, { value: s.serviceCharge, style: 'Currency' }, { value: 'Biaya layanan yang terkumpul' }],
-    [{ value: 'Diskon transaksi', style: 'Label' }, { value: s.diskonTransaksi, style: 'Currency' }, { value: 'Diskon manual di transaksi' }],
-    [{ value: 'Diskon voucher', style: 'Label' }, { value: s.diskonVoucher, style: 'Currency' }, { value: 'Diskon dari voucher' }],
-    [{ value: 'Total diskon', style: 'Label' }, { value: s.totalDiskon, style: 'Currency' }, { value: 'Diskon transaksi + voucher' }],
-    [{ value: 'Jumlah item terjual', style: 'Label' }, { value: s.jumlahItem, style: 'Number' }, { value: 'Jumlah baris item penjualan' }],
+    [{ value: 'Total diterima', style: 'Label' }, { value: s.omzetBersih + s.ppn + s.serviceCharge, style: 'Currency' }, { value: 'Omzet bersih + PPN + service charge' }],
   ];
 }
 
@@ -342,20 +354,35 @@ function namedTotalRows(title: string, rows: NamedTotalRow[]): ExcelRow[] {
 
 function productRows(title: string, rows: ProductRow[], complete: boolean): ExcelRow[] {
   const excelRows: ExcelRow[] = [
-    titleRow(title, 3),
-    [{ value: 'Produk dengan kuantitas terjual tertinggi', style: 'Muted', mergeAcross: 3 }],
+    titleRow(title, 5),
+    [{ value: 'Urut berdasarkan jumlah terjual', style: 'Muted', mergeAcross: 5 }],
     blankRow(),
-    headerRow(['Produk', 'Qty Terjual', 'Omzet', 'Rata-rata per Qty']),
+    headerRow(['No', 'Produk', 'Terjual', 'Omzet produk', 'Omzet varian', 'Total']),
   ];
-  if (!complete) return [...excelRows, emptyExcelRow('Data produk terlaris tersedia pada laporan lengkap PRO/BUSINESS.', 3)];
-  if (!rows.length) return [...excelRows, emptyExcelRow('Tidak ada data pada periode ini.', 3)];
-  rows.forEach((row) => {
+  if (!complete) return [...excelRows, emptyExcelRow('Data produk terlaris tersedia pada laporan lengkap PRO/BUSINESS.', 5)];
+  if (!rows.length) return [...excelRows, emptyExcelRow('Belum ada produk terjual di periode ini.', 5)];
+  rows.forEach((row, i) => {
     excelRows.push([
+      { value: i + 1, style: 'Number' },
       { value: row.nama },
       { value: row.qty, style: 'Number' },
+      { value: row.omzet - row.omzetVarian, style: 'Currency' },
+      { value: row.omzetVarian, style: 'Currency' },
       { value: row.omzet, style: 'Currency' },
-      { value: row.qty > 0 ? row.omzet / row.qty : 0, style: 'Currency' },
     ]);
+  });
+  return excelRows;
+}
+
+function variantRows(rows: VariantRow[]): ExcelRow[] {
+  const excelRows: ExcelRow[] = [
+    titleRow('Varian Terlaris', 3),
+    [{ value: 'Urut berdasarkan jumlah dipilih', style: 'Muted', mergeAcross: 3 }],
+    blankRow(),
+    headerRow(['Varian', 'Grup', 'Dipilih', 'Omzet']),
+  ];
+  rows.forEach((row) => {
+    excelRows.push([{ value: row.nama }, { value: row.grup }, { value: row.qty, style: 'Number' }, { value: row.omzet, style: 'Currency' }]);
   });
   return excelRows;
 }
@@ -683,7 +710,8 @@ function buildExcelSheets(report: ReportModel): ExcelSheetDefinition[] {
     { name: 'Ringkasan', rows: summaryRows(report), widths: [190, 155, 360, 130] },
     { name: 'Metode Bayar', rows: namedTotalRows('Penjualan per Metode Pembayaran', report.perMetode), widths: [230, 135, 150, 110] },
     { name: 'Kasir', rows: namedTotalRows('Rekap Penjualan per Kasir', report.perKasir), widths: [230, 135, 150, 110] },
-    { name: 'Produk Terlaris', rows: productRows('Produk Terlaris', report.produkTerlaris, report.hasCompleteRekap), widths: [310, 110, 150, 150] },
+    { name: 'Produk Terlaris', rows: productRows('Produk Terlaris', report.produkTerlaris, report.hasCompleteRekap), widths: [50, 310, 90, 150, 150, 150] },
+    ...(report.varianTerlaris.length ? [{ name: 'Varian Terlaris', rows: variantRows(report.varianTerlaris), widths: [260, 200, 100, 150] }] : []),
     { name: 'Stok Menipis', rows: lowStockRows('Produk Stok Menipis', report.stokMenipis, report.hasCompleteRekap), widths: [310, 110, 150] },
   ];
 }
@@ -837,7 +865,7 @@ function downloadBlob(filename: string, blob: Blob) {
 
 function reportFilename(report: ReportModel, extension: 'xlsx' | 'pdf'): string {
   const merchant = safeFilenameSegment(report.merchantName);
-  return `laporan-keuangan-${merchant}-${report.tanggalAwal}_${report.tanggalAkhir}-${fileDateTime(report.generatedAt)}.${extension}`;
+  return `laporan-keuangan_${report.tanggalAwal}_${report.tanggalAkhir}.${extension}`;
 }
 
 export function exportFinancialReportExcel(input: FinancialReportExportInput) {
@@ -1071,13 +1099,13 @@ function buildPdfHtml(report: ReportModel): string {
 
     <div class="metrics">
       ${metricCard('Omzet bersih', formatRupiah(s.omzetBersih), 'Tanpa PPN dan service')}
-      ${metricCard('Penerimaan bruto', formatRupiah(s.penerimaanBruto), 'Total dibayar pelanggan')}
-      ${metricCard('Laba kotor', formatRupiah(s.labaKotor), `${s.marginLaba.toFixed(1)}% dari omzet bersih`)}
-      ${metricCard('Transaksi', formatNumber(s.totalTransaksi), `Rata-rata ${formatRupiah(s.rataRataTransaksi)}`)}
-      ${metricCard('HPP / modal', formatRupiah(s.totalModal))}
-      ${metricCard('PPN', formatRupiah(s.ppn), 'Titipan pajak')}
+      ${metricCard('Transaksi', formatNumber(s.totalTransaksi))}
+      ${metricCard('Modal (HPP)', formatRupiah(s.totalModal))}
+      ${metricCard('Laba kotor', formatRupiah(s.labaKotor))}
+      ${metricCard('Margin', `${s.marginLaba.toFixed(1)}%`, 'Laba dibagi omzet bersih')}
+      ${metricCard('PPN', formatRupiah(s.ppn), 'Disetor ke negara')}
       ${metricCard('Service charge', formatRupiah(s.serviceCharge))}
-      ${metricCard('Total diskon', formatRupiah(s.totalDiskon), `${formatRupiah(s.diskonTransaksi)} transaksi, ${formatRupiah(s.diskonVoucher)} voucher`)}
+      ${metricCard('Total diterima', formatRupiah(s.omzetBersih + s.ppn + s.serviceCharge))}
     </div>
 
     ${tableHtml(
@@ -1108,11 +1136,19 @@ function buildPdfHtml(report: ReportModel): string {
 
     ${tableHtml(
       'Produk Terlaris',
-      ['Produk', 'Qty', 'Omzet'],
-      report.produkTerlaris.map((row) => [row.nama, formatNumber(row.qty), formatRupiah(row.omzet)]),
-      report.hasCompleteRekap ? 'Tidak ada data produk terlaris.' : completeMessage,
-      [1, 2],
+      ['No', 'Produk', 'Terjual', 'Omzet produk', 'Omzet varian', 'Total'],
+      report.produkTerlaris.map((row, i) => [i + 1, row.nama, formatNumber(row.qty), formatRupiah(row.omzet - row.omzetVarian), formatRupiah(row.omzetVarian), formatRupiah(row.omzet)]),
+      report.hasCompleteRekap ? 'Belum ada produk terjual di periode ini.' : completeMessage,
+      [0, 2, 3, 4, 5],
     )}
+
+    ${report.varianTerlaris.length ? tableHtml(
+      'Varian Terlaris',
+      ['Varian', 'Grup', 'Dipilih', 'Omzet'],
+      report.varianTerlaris.map((row) => [row.nama, row.grup, formatNumber(row.qty), formatRupiah(row.omzet)]),
+      '',
+      [2, 3],
+    ) : ''}
 
     ${tableHtml(
       'Produk Stok Menipis',

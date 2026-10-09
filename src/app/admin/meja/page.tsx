@@ -18,6 +18,7 @@ export default function MejaPage() {
   const isPro = planVal === 'PRO' || planVal === 'BUSINESS'; // BUSINESS = superset PRO
   const [data, setData] = useState<Meja[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [nomor, setNomor] = useState('');
   const [adding, setAdding] = useState(false);
@@ -26,9 +27,9 @@ export default function MejaPage() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try { setData((await mejaService.list()) || []); }
-    catch (err) { toast.error(getErrorMessage(err)); }
+    catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { if (isPro) load(); else setLoading(false); }, [load, isPro]);
@@ -86,7 +87,7 @@ export default function MejaPage() {
           <Button onClick={add} loading={adding} disabled={!nomor.trim()}><Plus className="h-4 w-4" /> Tambah meja</Button>
         </div>
       </CardBody></Card>
-      <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber emptyTitle="Belum ada meja" /></CardBody></Card>
+      <Card><CardBody><DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber emptyTitle="Belum ada meja" /></CardBody></Card>
 
       <Modal open={!!qr} onClose={() => setQr(null)} title={`QR Menu - Meja ${qr?.NOMOR ?? ''}`} size="sm">
         {qr && (

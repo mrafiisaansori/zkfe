@@ -2,6 +2,7 @@
 import { ReactNode } from 'react';
 import { EmptyState } from './EmptyState';
 import { TableSkeleton } from './Skeleton';
+import { ErrorState } from './ErrorState';
 
 export interface Column<T> {
   header: string;
@@ -12,6 +13,9 @@ interface Props<T> {
   columns: Column<T>[];
   data: T[];
   loading?: boolean;
+  // Gagal memuat -> tampilkan pesan + tombol muat ulang (bukan "Belum ada data").
+  error?: string;
+  onRetry?: () => void;
   rowKey: (row: T) => string | number;
   emptyTitle?: string;
   // Tampilkan kolom "No" (nomor urut tampilan) menggantikan ID asli DB.
@@ -21,7 +25,7 @@ interface Props<T> {
 }
 
 export function DataTable<T>({
-  columns: cols, data, loading, rowKey, emptyTitle, showRowNumber, startIndex = 0,
+  columns: cols, data, loading, error, onRetry, rowKey, emptyTitle, showRowNumber, startIndex = 0,
 }: Props<T>) {
   // Sisipkan kolom "No" di paling kiri bila diminta. Nomor urut murni tampilan,
   // tidak membocorkan ID asli database ke user.
@@ -37,6 +41,7 @@ export function DataTable<T>({
     : cols;
 
   if (loading) return <TableSkeleton cols={Math.max(columns.length, 3)} />;
+  if (error) return <ErrorState message={error} onRetry={onRetry} />;
   if (!data.length) return <EmptyState title={emptyTitle ?? 'Belum ada data'} />;
 
   return (

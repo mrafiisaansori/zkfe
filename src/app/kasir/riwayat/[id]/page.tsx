@@ -5,6 +5,7 @@ import { ArrowLeft, Printer, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card, CardBody, Button, LoadingState, ErrorState, Badge, Modal, Input, UpgradeModal } from '@/components/ui';
 import { Receipt, type ReceiptSize } from '@/components/pos/Receipt';
+import { TrxItems } from '@/components/pos/TrxItems';
 import { penjualanService, identitasService, getErrorMessage } from '@/services';
 import type { Penjualan, Identitas } from '@/types';
 import { formatRupiah, formatDate } from '@/utils/format';
@@ -117,14 +118,12 @@ export default function DetailRiwayatPage() {
           <span>{formatDate(trx.TANGGAL)}, {trx.JAM?.slice(0, 5)} &middot; {trx.jenisBayar?.NAMA}</span>
           <Badge tone="green">{trx.STATUS_BAYAR || 'LUNAS'}</Badge>
         </div>
-        {trx.member && (
-          <p className="mb-3 text-sm text-slate-500">Member: <span className="font-semibold text-slate-800">{trx.member.NAMA}</span></p>
-        )}
         {trx.open_bill && (
           <p className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700 dark:bg-accent/15 dark:text-accent">
             Dari Open Bill {trx.open_bill.no_bill} · Dibuka oleh {trx.open_bill.dibuka_oleh ?? '-'}
           </p>
         )}
+        <div className="mb-3"><TrxItems trx={trx} /></div>
         <div id="print-area" className="rounded-lg border border-dashed border-slate-200">
           <Receipt
             ref={printRef}

@@ -13,6 +13,7 @@ import { usePageLoading } from '@/hooks/usePageLoading';
 export default function UserPage() {
   const [data, setData] = useState<Pengguna[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Pengguna | null>(null);
@@ -25,9 +26,9 @@ export default function UserPage() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try { setData((await penggunaService.list()) || []); }
-    catch (err) { toast.error(getErrorMessage(err)); }
+    catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -86,7 +87,7 @@ export default function UserPage() {
     <div>
       <PageHeader title="Pengguna" description="Manajemen akun kasir & gudang"
         action={<Button onClick={() => { setEditing(null); setFormOpen(true); }}><Plus className="h-4 w-4" /> Tambah</Button>} />
-      <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
+      <Card><CardBody><DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
 
       <Modal open={formOpen} onClose={() => { setFormOpen(false); setEditing(null); }} title={editing ? 'Edit Pengguna' : 'Tambah Pengguna'} size="sm">
         <UserForm initial={editing} loading={saving} onSubmit={handleSubmit} onCancel={() => { setFormOpen(false); setEditing(null); }} />

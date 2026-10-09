@@ -9,9 +9,9 @@ export const modifierService = {
     put<ModifierGroup>(`/modifier/groups/${id}`, data),
   removeGroup: (id: number) => del(`/modifier/groups/${id}`),
 
-  addOption: (groupId: number, data: { nama: string; harga: number }) =>
+  addOption: (groupId: number, data: { nama: string; harga: number; harga_beli?: number }) =>
     post(`/modifier/groups/${groupId}/options`, data),
-  updateOption: (id: number, data: { nama?: string; harga?: number }) => put(`/modifier/options/${id}`, data),
+  updateOption: (id: number, data: { nama?: string; harga?: number; harga_beli?: number }) => put(`/modifier/options/${id}`, data),
   removeOption: (id: number) => del(`/modifier/options/${id}`),
 
   getForProduct: (produkId: number) => get<ModifierGroup[]>(`/modifier/produk/${produkId}`),

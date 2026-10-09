@@ -15,6 +15,7 @@ import { usePageLoading } from '@/hooks/usePageLoading';
 export default function StokPage() {
   const [produk, setProduk] = useState<Produk[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -26,13 +27,13 @@ export default function StokPage() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async (q = '', pageNo = 1) => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await produkService.listPage({ search: q || undefined, page: pageNo, limit: 25 });
       setProduk(res.data || []);
       setMeta(res.meta);
     }
-    catch (err) { toast.error(getErrorMessage(err)); }
+    catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => {
@@ -75,7 +76,7 @@ export default function StokPage() {
           </div>
           <Badge tone="blue">{meta?.total ?? produk.length} produk</Badge>
         </div>
-        <DataTable columns={columns} data={produk} loading={loading} rowKey={(r) => r.ID} showRowNumber startIndex={(page - 1) * 25} />
+        <DataTable error={error} onRetry={() => load(search, page)} columns={columns} data={produk} loading={loading} rowKey={(r) => r.ID} showRowNumber startIndex={(page - 1) * 25} />
         <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 

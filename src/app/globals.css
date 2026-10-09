@@ -217,3 +217,21 @@ input[type=number] { -moz-appearance: textfield; }
    retrofit di atas -> override manual agar tidak jadi kotak terang di kartu gelap. */
 .dark .zk-skeleton { background: linear-gradient(100deg, #29374a 0%, #334155 50%, #29374a 100%); }
 .dark .zk-skeleton::after { background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent); }
+
+/* Mode gelap: teks/tombol brand di atas kartu gelap pakai aksen (#00A3CC), bukan
+   #0A6CB0 (kontras terlalu rendah). Tombol isi biru tetap putih (kelas text-white tidak disentuh). */
+.dark [class~="text-primary"],
+.dark [class~="text-brand-600"],
+.dark [class~="text-brand-700"],
+.dark [class~="hover:text-primary"]:hover { color: #00a3cc; }
+
+/* Latar label status/info pastel terang -> nada transparan agar tidak menyilaukan. */
+.dark [class~="bg-emerald-100"] { background-color: rgba(16, 185, 129, 0.18); }
+.dark [class~="bg-rose-100"] { background-color: rgba(244, 63, 94, 0.18); }
+.dark [class~="bg-amber-100"] { background-color: rgba(245, 158, 11, 0.2); }
+.dark [class~="bg-sky-100"] { background-color: rgba(14, 165, 233, 0.18); }
+.dark [class~="bg-brand-100"] { background-color: rgba(0, 163, 204, 0.16); }
+.dark [class~="text-emerald-700"] { color: #6ee7b7; }
+.dark [class~="text-rose-700"] { color: #fda4af; }
+.dark [class~="text-amber-700"] { color: #fcd34d; }
+.dark [class~="text-sky-700"] { color: #7dd3fc; }

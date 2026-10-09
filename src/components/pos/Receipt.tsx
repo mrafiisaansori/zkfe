@@ -63,11 +63,28 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           return (
             <div key={d.ID} className="mb-1">
               <p className="truncate">{d.produk?.NAMA ?? `#${d.ID_PRODUK}`}</p>
-              {d.MODIFIER && <p className="text-[10px] text-black/70">{d.MODIFIER}</p>}
-              <div className="flex justify-between">
-                <span>{d.QTY} x {formatRupiah(d.HARGA_JUAL)}</span>
-                <span>{formatRupiah(d.HARGA_JUAL * d.QTY)}</span>
-              </div>
+              {d.MODIFIER_DETAIL?.length ? (
+                <>
+                  <div className="flex justify-between">
+                    <span>{d.QTY} x {formatRupiah(d.HARGA_DASAR ?? d.HARGA_JUAL)}</span>
+                    <span>{formatRupiah((d.HARGA_DASAR ?? d.HARGA_JUAL) * d.QTY)}</span>
+                  </div>
+                  {d.MODIFIER_DETAIL.map((o, i) => (
+                    <div key={i} className="flex justify-between">
+                      <span className="truncate">&nbsp;&nbsp;+ {o.nama}</span>
+                      <span>{formatRupiah(o.harga * d.QTY)}</span>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {d.MODIFIER && <p className="text-[10px] text-black/70">{d.MODIFIER}</p>}
+                  <div className="flex justify-between">
+                    <span>{d.QTY} x {formatRupiah(d.HARGA_JUAL)}</span>
+                    <span>{formatRupiah(d.HARGA_JUAL * d.QTY)}</span>
+                  </div>
+                </>
+              )}
               {lineDiskon > 0 && (
                 <div className="flex justify-between text-[10px]"><span>&nbsp;&nbsp;diskon item</span><span>- {formatRupiah(lineDiskon)}</span></div>
               )}

@@ -26,6 +26,7 @@ interface ItemRow { id_produk: number | ''; harga_beli: number | ''; qty: number
 export default function PembelianPage() {
   const [data, setData] = useState<Pembelian[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [produk, setProduk] = useState<Produk[]>([]);
@@ -72,7 +73,7 @@ export default function PembelianPage() {
   }, [mergeProdukOptions]);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await pembelianService.listPage({
         search: search || undefined,
@@ -82,7 +83,7 @@ export default function PembelianPage() {
       });
       setData(res.data || []);
       setMeta(res.meta);
-    } catch (err) { toast.error(getErrorMessage(err)); }
+    } catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, [search, status, page]);
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
@@ -209,7 +210,7 @@ export default function PembelianPage() {
       </CardBody></Card>
 
       <Card><CardBody>
-        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada pembelian" showRowNumber startIndex={(page - 1) * 25} />
+        <DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada pembelian" showRowNumber startIndex={(page - 1) * 25} />
         <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 

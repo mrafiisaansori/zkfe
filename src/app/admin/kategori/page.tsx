@@ -12,6 +12,7 @@ import { usePageLoading } from '@/hooks/usePageLoading';
 export default function KategoriPage() {
   const [data, setData] = useState<Kategori[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Kategori | null>(null);
@@ -20,9 +21,9 @@ export default function KategoriPage() {
   const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try { setData((await kategoriService.list()) || []); }
-    catch (err) { toast.error(getErrorMessage(err)); }
+    catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -58,7 +59,7 @@ export default function KategoriPage() {
     <div>
       <PageHeader title="Kategori" description="Kelompok produk untuk filter POS dan laporan Zona Kasir"
         action={<Button onClick={() => { setEditing(null); setFormOpen(true); }}><Plus className="h-4 w-4" /> Tambah</Button>} />
-      <Card><CardBody><DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
+      <Card><CardBody><DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} showRowNumber /></CardBody></Card>
 
       <Modal open={formOpen} onClose={() => { setFormOpen(false); setEditing(null); }} title={editing ? 'Edit Kategori' : 'Tambah Kategori'} size="sm">
         <KategoriForm initial={editing} loading={saving} onSubmit={handleSubmit} onCancel={() => { setFormOpen(false); setEditing(null); }} />

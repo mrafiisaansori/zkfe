@@ -15,6 +15,7 @@ import { usePageLoading } from '@/hooks/usePageLoading';
 export default function TransaksiPage() {
   const [data, setData] = useState<Penjualan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [awal, setAwal] = useState(todayISO());
   const [akhir, setAkhir] = useState(todayISO());
@@ -25,7 +26,7 @@ export default function TransaksiPage() {
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await penjualanService.listPage({
         tanggal_awal: awal,
@@ -37,7 +38,7 @@ export default function TransaksiPage() {
       setData(res.data || []);
       setMeta(res.meta);
     }
-    catch (err) { toast.error(getErrorMessage(err)); }
+    catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, [awal, akhir, status, page]);
   useEffect(() => { load(); }, [load]);
@@ -80,7 +81,7 @@ export default function TransaksiPage() {
         </div>
       </CardBody></Card>
       <Card><CardBody>
-        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Tidak ada transaksi pada periode ini" showRowNumber startIndex={(page - 1) * 25} />
+        <DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Tidak ada transaksi pada periode ini" showRowNumber startIndex={(page - 1) * 25} />
         <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 

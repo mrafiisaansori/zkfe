@@ -426,6 +426,9 @@ export interface DetailPenjualan {
   HARGA_JUAL: number;
   QTY: number;
   MODIFIER?: string | null; // deskripsi varian terpilih
+  HARGA_DASAR?: number; // harga produk tanpa varian (snapshot)
+  HARGA_VARIAN?: number;
+  MODIFIER_DETAIL?: { id: number; nama: string; grup: string | null; harga: number; harga_beli?: number }[] | null;
   SATUAN?: string | null; // snapshot nama UOM saat transaksi
   DISKON?: number; // diskon per item (nominal)
   produk?: { ID: number; NAMA: string };
@@ -436,6 +439,7 @@ export interface ModifierOption {
   ID_GROUP: number;
   NAMA: string;
   HARGA: number;
+  HARGA_BELI?: number;
 }
 
 export interface ModifierGroup {
@@ -505,11 +509,14 @@ export interface RekapLaporan {
   };
   per_metode_bayar: { metode: string; jumlah_transaksi: number; total: number }[];
   per_kasir: { id_user: number | null; kasir: string; jumlah_transaksi: number; total: number }[];
-  produk_terlaris: { id_produk: number; nama: string; qty: number; omzet: number }[];
+  produk_terlaris: { id_produk: number; nama: string; qty: number; omzet: number; omzet_varian?: number }[];
+  varian_terlaris?: VarianTerlaris[];
   produk_stok_menipis: { id: number; nama: string; stok: number; harga_jual: number }[];
   harian: { tanggal: string; jumlah_transaksi: number; total: number }[];
   bulanan: { bulan: string; jumlah_transaksi: number; total: number }[];
 }
+
+export interface VarianTerlaris { nama: string; grup: string | null; qty: number; omzet: number }
 
 export interface DashboardSummary {
   tanggal: string;
@@ -524,8 +531,9 @@ export interface DashboardSummary {
   total_produk: number;
   total_pengguna: number;
   stok_menipis: { ID: number; NAMA: string; STOK: number }[];
-  produk_terlaris?: { id_produk: number; nama: string; qty: number; omzet: number }[];
-  transaksi_terbaru?: { ID: number; NO_NOTA?: string | null; NO_NOTA_URUT?: number | null; TANGGAL: string; JAM: string; TOTAL: string; kasir?: { ID: number; NAMA: string } }[];
+  produk_terlaris?: { id_produk: number; nama: string; qty: number; omzet: number; omzet_varian?: number }[];
+  varian_terlaris?: VarianTerlaris[];
+  transaksi_terbaru?: { ID: number; NO_NOTA?: string | null; NO_NOTA_URUT?: number | null; TANGGAL: string; JAM: string; TOTAL: string; kasir?: { ID: number; NAMA: string }; jenisBayar?: { NAMA: string } | null }[];
 }
 
 // Dashboard operasional Gudang (tanpa data keuangan).

@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { Card, CardBody, Button, Modal, ConfirmDialog, Badge, Input, CurrencyInput, EmptyState } from '@/components/ui';
 import { modifierService, getErrorMessage } from '@/services';
-import type { ModifierGroup } from '@/types';
+import type { ModifierGroup, ModifierOption } from '@/types';
 import { usePageLoading } from '@/hooks/usePageLoading';
 import { formatRupiah } from '@/utils/format';
 
@@ -20,7 +20,7 @@ export default function ModifierPage() {
   const [saving, setSaving] = useState(false);
 
   const [optFor, setOptFor] = useState<ModifierGroup | null>(null); // grup yang sedang ditambah opsi
-  const [oForm, setOForm] = useState({ nama: '', harga: 0 });
+  const [oForm, setOForm] = useState({ nama: '', harga: 0, harga_beli: 0 });
 
   const [toDelGroup, setToDelGroup] = useState<ModifierGroup | null>(null);
   const [busy, setBusy] = useState(false);
@@ -51,7 +51,7 @@ export default function ModifierPage() {
   }
   async function addOption() {
     if (!optFor || !oForm.nama.trim()) return; setSaving(true);
-    try { await modifierService.addOption(optFor.ID, { nama: oForm.nama.trim(), harga: Number(oForm.harga) || 0 }); setOForm({ nama: '', harga: 0 }); toast.success('Opsi ditambahkan'); await load(); setOptFor((g) => groups.find((x) => x.ID === g?.ID) || g); }
+    try { await modifierService.addOption(optFor.ID, { nama: oForm.nama.trim(), harga: Number(oForm.harga) || 0, harga_beli: Number(oForm.harga_beli) || 0 }); setOForm({ nama: '', harga: 0, harga_beli: 0 }); toast.success('Opsi ditambahkan'); await load(); setOptFor((g) => groups.find((x) => x.ID === g?.ID) || g); }
     catch (err) { toast.error(getErrorMessage(err)); } finally { setSaving(false); }
   }
   async function delOption(id: number) {
@@ -95,14 +95,14 @@ export default function ModifierPage() {
                 <li key={o.ID} className="flex items-center justify-between px-3 py-2 text-sm">
                   <span className="text-slate-700">{o.NAMA}</span>
                   <span className="flex items-center gap-2">
-                    <span className="font-semibold text-slate-500">{o.HARGA > 0 ? `+${formatRupiah(o.HARGA)}` : 'Gratis'}</span>
+                    <OptPrice o={o} />
                     <button onClick={() => delOption(o.ID)} className="rounded-md p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-500"><Trash2 className="h-3.5 w-3.5" /></button>
                   </span>
                 </li>
               ))}
               {(g.options || []).length === 0 && <li className="px-3 py-2 text-xs text-slate-400">Belum ada opsi</li>}
             </ul>
-            <Button variant="outline" size="sm" className="mt-2" onClick={() => { setOForm({ nama: '', harga: 0 }); setOptFor(g); }}><Plus className="h-4 w-4" /> Tambah opsi</Button>
+            <Button variant="outline" size="sm" className="mt-2" onClick={() => { setOForm({ nama: '', harga: 0, harga_beli: 0 }); setOptFor(g); }}><Plus className="h-4 w-4" /> Tambah opsi</Button>
           </CardBody></Card>
         ))}
       </div>
@@ -132,15 +132,18 @@ export default function ModifierPage() {
             {(optGroup?.options || []).map((o) => (
               <li key={o.ID} className="flex items-center justify-between px-3 py-2 text-sm">
                 <span>{o.NAMA}</span>
-                <span className="flex items-center gap-2"><span className="text-slate-500">{o.HARGA > 0 ? `+${formatRupiah(o.HARGA)}` : 'Gratis'}</span>
+                <span className="flex items-center gap-2"><OptPrice o={o} />
                   <button onClick={() => delOption(o.ID)} className="text-rose-500"><Trash2 className="h-3.5 w-3.5" /></button></span>
               </li>
             ))}
             {(optGroup?.options || []).length === 0 && <li className="px-3 py-2 text-xs text-slate-400">Belum ada opsi</li>}
           </ul>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2">
             <Input label="Nama opsi" value={oForm.nama} onChange={(e) => setOForm((f) => ({ ...f, nama: e.target.value }))} placeholder="mis. Large" />
-            <CurrencyInput label="Tambahan harga" value={oForm.harga} onChange={(v) => setOForm((f) => ({ ...f, harga: v }))} />
+            <div className="grid grid-cols-2 gap-2">
+              <CurrencyInput label="Harga jual" value={oForm.harga} onChange={(v) => setOForm((f) => ({ ...f, harga: v }))} />
+              <CurrencyInput label="Modal (opsional)" value={oForm.harga_beli} onChange={(v) => setOForm((f) => ({ ...f, harga_beli: v }))} />
+            </div>
           </div>
           <Button onClick={addOption} loading={saving} disabled={!oForm.nama.trim()}><Plus className="h-4 w-4" /> Tambah opsi</Button>
         </div>
@@ -149,5 +152,14 @@ export default function ModifierPage() {
       <ConfirmDialog open={!!toDelGroup} onClose={() => setToDelGroup(null)} onConfirm={delGroup} loading={busy}
         title="Hapus grup" message={`Hapus grup "${toDelGroup?.NAMA}" beserta semua opsinya?`} confirmLabel="Hapus" />
     </div>
+  );
+}
+
+function OptPrice({ o }: { o: ModifierOption }) {
+  return (
+    <span className="text-right text-slate-500">
+      <span className="font-semibold">{o.HARGA > 0 ? `+${formatRupiah(o.HARGA)}` : 'Gratis'}</span>
+      {Number(o.HARGA_BELI) > 0 && <span className="block text-xs text-slate-400">Modal {formatRupiah(Number(o.HARGA_BELI))}</span>}
+    </span>
   );
 }

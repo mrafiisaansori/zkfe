@@ -29,6 +29,7 @@ interface ItemRow { id_produk: number | ''; qty: number | ''; alasan: string; ko
 export default function ReturPage() {
   const [data, setData] = useState<Retur[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   usePageLoading(loading);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [produk, setProduk] = useState<Produk[]>([]);
@@ -98,7 +99,7 @@ export default function ReturPage() {
   }, [mergePembelianOptions]);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    setLoading(true); setError('');
     try {
       const res = await returService.listPage({
         search: search || undefined,
@@ -108,7 +109,7 @@ export default function ReturPage() {
       });
       setData(res.data || []);
       setMeta(res.meta);
-    } catch (err) { toast.error(getErrorMessage(err)); }
+    } catch (err) { setError(getErrorMessage(err)); }
     finally { setLoading(false); }
   }, [search, status, page]);
   useEffect(() => { const t = setTimeout(load, 300); return () => clearTimeout(t); }, [load]);
@@ -249,7 +250,7 @@ export default function ReturPage() {
       </CardBody></Card>
 
       <Card><CardBody>
-        <DataTable columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada retur" showRowNumber startIndex={(page - 1) * 25} />
+        <DataTable error={error} onRetry={() => load()} columns={columns} data={data} loading={loading} rowKey={(r) => r.ID} emptyTitle="Belum ada retur" showRowNumber startIndex={(page - 1) * 25} />
         <Pagination page={page} totalPages={meta?.total_pages ?? 1} onChange={setPage} />
       </CardBody></Card>
 
