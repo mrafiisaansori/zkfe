@@ -117,6 +117,9 @@ export default function DetailRiwayatPage() {
           <span>{formatDate(trx.TANGGAL)}, {trx.JAM?.slice(0, 5)} &middot; {trx.jenisBayar?.NAMA}</span>
           <Badge tone="green">{trx.STATUS_BAYAR || 'LUNAS'}</Badge>
         </div>
+        {trx.member && (
+          <p className="mb-3 text-sm text-slate-500">Member: <span className="font-semibold text-slate-800">{trx.member.NAMA}</span></p>
+        )}
         {trx.open_bill && (
           <p className="mb-3 rounded-lg bg-brand-50 px-3 py-2 text-xs font-medium text-brand-700 dark:bg-accent/15 dark:text-accent">
             Dari Open Bill {trx.open_bill.no_bill} · Dibuka oleh {trx.open_bill.dibuka_oleh ?? '-'}

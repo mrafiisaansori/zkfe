@@ -54,6 +54,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           <div className="flex justify-between"><span>No</span><span>{nomorNotaPenjualanLabel(trx)}</span></div>
           <div className="flex justify-between"><span>Tanggal</span><span>{formatDateTime(`${trx.TANGGAL}T${trx.JAM || '00:00:00'}`)}</span></div>
           <div className="flex justify-between"><span>Kasir</span><span>{trx.kasir?.NAMA ?? '-'}</span></div>
+          {trx.member && <div className="flex justify-between"><span>Member</span><span>{trx.member.NAMA}</span></div>}
         </div>
         <div className="my-1.5 border-t border-dashed border-black" />
 

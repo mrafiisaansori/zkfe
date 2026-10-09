@@ -10,7 +10,7 @@ import { MemberPickerModal } from '@/components/pos/MemberPickerModal';
 import { PaymentModal, isQrisName } from '@/components/pos/PaymentModal';
 import { SplitBillModal, type SplitConfirmData } from '@/components/pos/SplitBillModal';
 import { Receipt } from '@/components/pos/Receipt';
-import { useCartStore } from '@/stores/cartStore';
+import { useCartStore, type CartMember } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { produkService, jenisBayarService, kategoriService, penjualanService, paymentService, openBillService, qrisService, taxService, identitasService, modifierService, kasShiftService, getErrorMessage } from '@/services';
 import { cn } from '@/utils/cn';
@@ -442,6 +442,15 @@ export default function PosPage() {
     } catch (err) { toast.error(getErrorMessage(err)); }
   }
 
+  // Pilih member -> nama pelanggan bill otomatis terisi (tidak menimpa nama ketikan manual).
+  function handleSelectMember(m: CartMember | null) {
+    const prev = cart.member?.nama;
+    const sync = (cur: string) => (!cur.trim() || cur === prev ? (m?.nama ?? '') : cur);
+    if (billCtx) cart.setBillMeta({ customer_name: sync(billCtx.customer_name) });
+    else setBillForm((f) => ({ ...f, customer_name: sync(f.customer_name) }));
+    cart.setMember(m);
+  }
+
   // Simpan keranjang sebagai open bill baru (status OPEN).
   async function handleSaveBill() {
     if (!user || cart.items.length === 0) return;
@@ -694,7 +703,7 @@ export default function PosPage() {
         open={memberPickerOpen}
         onClose={() => setMemberPickerOpen(false)}
         selected={cart.member}
-        onSelect={cart.setMember}
+        onSelect={handleSelectMember}
       />
 
       <PaymentModal

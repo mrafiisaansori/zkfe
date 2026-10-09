@@ -47,6 +47,7 @@ export async function buildReceiptEscPos({ trx, namaToko, alamatToko, logoUrl, b
   lines.push(twoCol('No', nomorNotaPenjualanLabel(trx), width));
   lines.push(twoCol('Tanggal', formatDateTime(`${trx.TANGGAL}T${trx.JAM || '00:00:00'}`), width));
   lines.push(twoCol('Kasir', trx.kasir?.NAMA ?? '-', width));
+  if (trx.member) lines.push(twoCol('Member', trx.member.NAMA, width));
   lines.push(dashes(width));
 
   for (const d of items) {
