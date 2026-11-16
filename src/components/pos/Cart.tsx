@@ -1,8 +1,10 @@
 'use client';
-import { Minus, Percent, Plus, ShoppingCart, Trash2, Save, ClipboardList, User, ChevronRight } from 'lucide-react';
-import { Button, EmptyState, ProductImage } from '@/components/ui';
+import { ChevronDown, ChevronRight, ClipboardList, Minus, Plus, Save, Split, Trash2, User } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { Button, ProductImage } from '@/components/ui';
 import { useCartStore } from '@/stores/cartStore';
 import { formatRupiah } from '@/utils/format';
+import { cn } from '@/utils/cn';
 
 interface CartProps {
   onCheckout: () => void;
@@ -14,26 +16,36 @@ interface CartProps {
   onPickMember?: () => void;
 }
 
+const stepBtn = 'flex h-9 w-9 items-center justify-center text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent disabled:opacity-40';
+const secondaryBtn = 'h-10 flex-1 rounded-lg text-sm font-semibold';
+
 export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSplitBill, isPro, onPickMember }: CartProps) {
-  const { items, updateQty, removeItem, subtotal, total, diskon, setDiskon, clear, bill, member } = useCartStore();
+  const { items, updateQty, removeItem, subtotal, total, diskon, setDiskon, clear, bill, member, count } = useCartStore();
   const billMode = !!bill;
+  const empty = items.length === 0;
+
+  // updateQty sudah memvalidasi stok; di sini hanya menampilkan alasannya bila ditolak.
+  function changeQty(lineId: string, qty: number) {
+    const res = updateQty(lineId, qty);
+    if (!res.ok && res.message) toast.error(res.message, { id: `qty-${lineId}` });
+  }
 
   return (
-    <div className="flex h-full min-h-0 flex-col rounded-none bg-white xl:rounded-[26px]">
-      <div className="flex shrink-0 items-center justify-between border-b border-brand-100 px-4 py-3">
-        <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-white">
-            <ShoppingCart className="h-4 w-4" />
-          </span>
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">{billMode ? 'Edit Bill' : 'Keranjang'}</h3>
-            <p className="text-xs text-slate-500">
-              {billMode && bill?.no_bill ? bill.no_bill : `${items.length} item dipilih`}
-            </p>
-          </div>
+    <div className="flex h-full min-h-0 flex-col bg-white">
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line px-4 py-3">
+        <div className="min-w-0">
+          <h3 className="text-[15px] font-semibold text-ink">{billMode ? 'Edit Bill' : 'Keranjang'}</h3>
+          <p className="truncate text-xs text-slate-500">
+            {billMode && bill?.no_bill ? `${bill.no_bill} · ` : ''}{count()} item
+          </p>
         </div>
-        {items.length > 0 && (
-          <button onClick={clear} className="rounded-full px-3 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-500/15">
+        {!empty && (
+          <button
+            type="button"
+            onClick={clear}
+            className="rounded-md px-2 py-1.5 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 dark:text-rose-300 dark:hover:bg-rose-500/15"
+          >
             Kosongkan
           </button>
         )}
@@ -41,216 +53,189 @@ export function Cart({ onCheckout, onSaveBill, onUpdateBill, onCancelBill, onSpl
 
       {isPro && onPickMember && (
         <button
+          type="button"
           onClick={onPickMember}
-          className="mx-3 mt-3 flex shrink-0 items-center gap-2.5 rounded-2xl border border-brand-100 bg-brand-50/60 px-3 py-2.5 text-left transition-colors hover:border-primary"
+          className="flex shrink-0 items-center gap-2.5 border-b border-line px-4 py-2.5 text-left transition-colors hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
         >
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-white">
-            <User className="h-4 w-4" />
-          </span>
+          <User className={cn('h-4 w-4 shrink-0', member ? 'text-primary' : 'text-slate-400')} />
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-bold text-slate-800">{member ? member.nama : 'Tanpa member'}</span>
-            <span className="block text-[11px] text-slate-500">{member ? 'Ganti member' : 'Pilih member/customer'}</span>
+            <span className={cn('block truncate text-sm', member ? 'font-semibold text-slate-800' : 'text-slate-600')}>
+              {member ? member.nama : 'Tanpa member'}
+            </span>
           </span>
+          <span className="shrink-0 text-xs font-medium text-primary">{member ? 'Ganti member' : 'Pilih member/customer'}</span>
           <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" />
         </button>
       )}
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
-        {items.length === 0 ? (
-          <EmptyState title="Keranjang masih kosong" description="Pilih produk dari grid untuk mulai transaksi." />
+      {/* Daftar item */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {empty ? (
+          <div className="flex h-full min-h-[160px] flex-col items-center justify-center px-6 py-10 text-center">
+            <p className="text-sm font-semibold text-slate-700">Keranjang masih kosong</p>
+            <p className="mt-1 text-sm text-slate-500">Pilih produk dari grid untuk mulai transaksi.</p>
+          </div>
         ) : (
-          <ul className="divide-y divide-slate-100 rounded-2xl border border-brand-100 bg-white">
+          <ul className="divide-y divide-slate-100">
             {items.map((it) => {
               const unit = it.harga + (Number(it.modifierExtra) || 0);
               return (
-              <li key={it.lineId} className="p-2.5">
-                <div className="grid grid-cols-[44px_minmax(0,1fr)] gap-2.5">
-                  <ProductImage src={it.image} alt={it.nama} className="h-11 w-11 rounded-xl bg-slate-50 object-contain p-1" />
-                  <div className="min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold leading-tight text-slate-900">{it.nama}</p>
-                        {it.modifierText && <p className="truncate text-[11px] text-primary">{it.modifierText}</p>}
-                        <p className="mt-0.5 text-xs text-slate-500">{formatRupiah(unit)}{it.satuan ? ` / ${it.satuan}` : ''}</p>
+                <li key={it.lineId} className="px-4 py-3">
+                  <div className="flex gap-3">
+                    <ProductImage src={it.image} alt="" className="h-10 w-10 shrink-0 rounded-lg border border-slate-100 bg-slate-50 object-contain p-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold leading-5 text-slate-900">{it.nama}</p>
+                          {it.modifierText && <p className="truncate text-xs text-primary">{it.modifierText}</p>}
+                          <p className="text-xs tabular-nums text-slate-500">{formatRupiah(unit)}{it.satuan ? ` / ${it.satuan}` : ''}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(it.lineId)}
+                          aria-label={`Hapus ${it.nama}`}
+                          title="Hapus item"
+                          className="-mr-1.5 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
-                      <button
-                        onClick={() => removeItem(it.lineId)}
-                        aria-label="Hapus"
-                        className="-mr-1 -mt-1 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
 
-                    <div className="mt-2 flex items-center justify-between gap-2">
-                      <div className="flex h-8 items-center rounded-xl border border-slate-200 bg-white">
-                        <button
-                          onClick={() => updateQty(it.lineId, it.qty - 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100"
-                        >
-                          <Minus className="h-3.5 w-3.5" />
-                        </button>
-                        <input
-                          type="number"
-                          value={it.qty}
-                          min={1}
-                          onChange={(e) => updateQty(it.lineId, Number(e.target.value))}
-                          className="h-8 w-9 bg-transparent text-center text-sm font-bold text-slate-900 outline-none"
-                        />
-                        <button
-                          onClick={() => updateQty(it.lineId, it.qty + 1)}
-                          className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-600 transition-colors hover:bg-slate-100"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </button>
+                      <div className="mt-2 flex items-center justify-between gap-2">
+                        <div className="flex items-center overflow-hidden rounded-lg border border-slate-200 bg-white">
+                          <button type="button" onClick={() => changeQty(it.lineId, it.qty - 1)} aria-label="Kurangi" className={stepBtn}>
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <input
+                            type="number"
+                            value={it.qty}
+                            min={1}
+                            aria-label={`Jumlah ${it.nama}`}
+                            onChange={(e) => changeQty(it.lineId, Number(e.target.value))}
+                            onFocus={(e) => e.target.select()}
+                            className="h-9 w-10 border-x border-slate-200 bg-transparent text-center text-sm font-semibold tabular-nums text-slate-900 outline-none focus:bg-brand-50"
+                          />
+                          <button type="button" onClick={() => changeQty(it.lineId, it.qty + 1)} aria-label="Tambah" className={stepBtn}>
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                        <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-slate-900">{formatRupiah(unit * it.qty)}</span>
                       </div>
-                      <span className="whitespace-nowrap text-sm font-bold text-slate-900">{formatRupiah(unit * it.qty)}</span>
                     </div>
                   </div>
-                </div>
-              </li>
+                </li>
               );
             })}
           </ul>
         )}
       </div>
 
-      <div className="shrink-0 border-t border-brand-100 bg-white px-4 py-3 shadow-[0_-10px_24px_-22px_rgba(15,23,42,0.45)]">
-        <div className="mb-2 space-y-1.5 text-sm">
+      {/* Ringkasan & aksi */}
+      <div className="shrink-0 border-t border-line bg-white px-4 pb-4 pt-3">
+        <div className="space-y-1 text-sm">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-slate-500">Subtotal</span>
-            <span className="font-bold text-slate-900">{formatRupiah(subtotal())}</span>
+            <span className="text-slate-600">Subtotal</span>
+            <span className="font-medium tabular-nums text-slate-900">{formatRupiah(subtotal())}</span>
           </div>
-          {diskon > 0 && (
-            <div className="flex items-center justify-between">
-              <span className="text-slate-500">Potongan</span>
-              <span className="font-bold text-rose-500">- {formatRupiah(diskon)}</span>
-            </div>
-          )}
         </div>
 
-        <details className="mb-3 rounded-2xl border border-dashed border-cyan-300 bg-cyan-50/70 p-2.5 dark:border-accent/30 dark:bg-accent/10" open={diskon > 0}>
-          <summary className="flex cursor-pointer list-none items-center justify-between">
-            <span className="flex items-center gap-1.5 text-sm font-bold text-slate-700">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-primary">
-                <Percent className="h-3.5 w-3.5" />
-              </span>
+        {/* Diskon: ringkas saat tidak dipakai, terbuka otomatis bila ada potongan. */}
+        <details className="group mt-1 border-b border-slate-100 pb-2" open={diskon > 0}>
+          <summary className="flex cursor-pointer list-none items-center justify-between rounded py-1 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent [&::-webkit-details-marker]:hidden">
+            <span className="flex items-center gap-1 text-slate-600">
               Diskon
+              <ChevronDown className="h-3.5 w-3.5 text-slate-400 transition-transform group-open:rotate-180" />
             </span>
-            {diskon > 0 && (
-              <button
-                onClick={(e) => { e.preventDefault(); setDiskon(0); }}
-                className="rounded-full px-2 py-1 text-xs font-semibold text-rose-500 transition-colors hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-500/15"
-              >
-                Hapus
-              </button>
+            {diskon > 0 ? (
+              <span className="flex items-center gap-2">
+                <span className="font-medium tabular-nums text-rose-600 dark:text-rose-300">- {formatRupiah(diskon)}</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); setDiskon(0); }}
+                  className="rounded px-1.5 py-0.5 text-xs font-semibold text-slate-500 transition-colors hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/15 dark:hover:text-rose-300"
+                >
+                  Hapus
+                </button>
+              </span>
+            ) : (
+              <span className="text-xs font-medium text-primary">Tambah</span>
             )}
           </summary>
-          <div className="mt-2">
-            <div className="flex h-10 items-center rounded-xl border border-slate-200 bg-white pl-3 transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-accent/25">
-              <span className="text-sm font-bold text-slate-400">Rp</span>
+          <div className="mt-1.5 flex gap-1.5">
+            <div className="flex h-9 min-w-0 flex-1 items-center rounded-lg border border-slate-200 bg-white pl-2.5 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-accent/25">
+              <span className="text-xs font-semibold text-slate-500">Rp</span>
               <input
                 type="text"
                 inputMode="numeric"
+                aria-label="Nominal diskon"
                 value={diskon ? diskon.toLocaleString('id-ID') : ''}
                 placeholder="0"
                 onChange={(e) => setDiskon(Number(e.target.value.replace(/\D/g, '')) || 0)}
-                className="h-full w-full bg-transparent px-2 text-right text-sm font-bold text-slate-800 outline-none placeholder:text-slate-300"
+                className="h-full w-full min-w-0 bg-transparent px-2 text-right text-sm font-semibold tabular-nums text-slate-800 outline-none placeholder:text-slate-400"
               />
             </div>
-            <div className="mt-2 grid grid-cols-4 gap-2">
-              {[5, 10, 15, 20].map((p) => {
-                const aktif = subtotal() > 0 && diskon === Math.round((subtotal() * p) / 100);
-                return (
-                  <button
-                    key={p}
-                    onClick={() => setDiskon(Math.round((subtotal() * p) / 100))}
-                    className={
-                      'rounded-lg border px-2 py-1.5 text-xs font-bold transition-colors ' +
-                      (aktif
-                        ? 'border-primary bg-primary text-white'
-                        : 'border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary')
-                    }
-                  >
-                    {p}%
-                  </button>
-                );
-              })}
-            </div>
+            {[5, 10, 15, 20].map((p) => {
+              const aktif = subtotal() > 0 && diskon === Math.round((subtotal() * p) / 100);
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setDiskon(Math.round((subtotal() * p) / 100))}
+                  className={cn(
+                    'h-9 w-11 shrink-0 rounded-lg border text-xs font-semibold tabular-nums transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent',
+                    aktif ? 'border-primary bg-primary text-white' : 'border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary',
+                  )}
+                >
+                  {p}%
+                </button>
+              );
+            })}
           </div>
         </details>
 
-        <div className="mb-3 flex items-center justify-between border-t border-slate-100 pt-3">
-          <span className="text-sm font-bold text-slate-600">Total</span>
-          <span className="text-2xl font-black tracking-tight text-slate-900">{formatRupiah(total())}</span>
+        <div className="flex items-baseline justify-between pb-3 pt-2.5">
+          <span className="text-sm font-semibold text-slate-700">Total</span>
+          <span className="text-2xl font-bold tabular-nums tracking-tight text-ink">{formatRupiah(total())}</span>
         </div>
+
+        <Button
+          className="h-12 w-full rounded-lg text-base font-semibold"
+          size="lg"
+          disabled={empty}
+          onClick={onCheckout}
+        >
+          {billMode ? 'Bayar' : 'Bayar Semua'}
+        </Button>
+
         {billMode ? (
-          <div className="space-y-2">
-            <Button
-              variant="gradient"
-              className="h-12 w-full rounded-2xl bg-primary text-base font-bold hover:bg-brand-700"
-              size="lg"
-              disabled={items.length === 0}
-              onClick={onCheckout}
-            >
-              Bayar
-            </Button>
-            {onSplitBill && (
-              <Button
-                variant="outline"
-                className="h-11 w-full rounded-2xl text-sm font-bold"
-                disabled={items.length === 0}
-                onClick={onSplitBill}
-              >
-                <ClipboardList className="h-4 w-4" /> Split Bill
-              </Button>
-            )}
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                className="h-11 rounded-2xl text-sm font-bold"
-                disabled={items.length === 0}
-                onClick={onUpdateBill}
-              >
+          <>
+            <div className="mt-2 flex gap-2">
+              {onSplitBill && (
+                <Button variant="outline" className={secondaryBtn} disabled={empty} onClick={onSplitBill}>
+                  <Split className="h-4 w-4" /> Split Bill
+                </Button>
+              )}
+              <Button variant="outline" className={secondaryBtn} disabled={empty} onClick={onUpdateBill}>
                 <Save className="h-4 w-4" /> Simpan
               </Button>
-              <Button
-                variant="outline"
-                className="h-11 rounded-2xl border-rose-200 text-sm font-bold text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-300 dark:hover:bg-rose-500/15"
-                onClick={onCancelBill}
-              >
-                <Trash2 className="h-4 w-4" /> Batalkan
-              </Button>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <Button
-              variant="gradient"
-              className="h-12 w-full rounded-2xl bg-primary text-base font-bold hover:bg-brand-700"
-              size="lg"
-              disabled={items.length === 0}
-              onClick={onCheckout}
+            <button
+              type="button"
+              onClick={onCancelBill}
+              className="mt-2 flex h-9 w-full items-center justify-center gap-1.5 rounded-lg text-sm font-semibold text-rose-600 transition-colors hover:bg-rose-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300 dark:text-rose-300 dark:hover:bg-rose-500/15"
             >
-              Bayar Semua
-            </Button>
+              <Trash2 className="h-4 w-4" /> Batalkan Bill
+            </button>
+          </>
+        ) : (onSplitBill || onSaveBill) && (
+          <div className="mt-2 flex gap-2">
             {onSplitBill && (
-              <Button
-                variant="outline"
-                className="h-11 w-full rounded-2xl text-sm font-bold"
-                disabled={items.length === 0}
-                onClick={onSplitBill}
-              >
-                <ClipboardList className="h-4 w-4" /> Split Bill
+              <Button variant="outline" className={secondaryBtn} disabled={empty} onClick={onSplitBill}>
+                <Split className="h-4 w-4" /> Split Bill
               </Button>
             )}
             {onSaveBill && (
-              <Button
-                variant="outline"
-                className="h-11 w-full rounded-2xl text-sm font-bold"
-                disabled={items.length === 0}
-                onClick={onSaveBill}
-              >
+              <Button variant="outline" className={secondaryBtn} disabled={empty} onClick={onSaveBill}>
                 <ClipboardList className="h-4 w-4" /> Simpan Bill
               </Button>
             )}

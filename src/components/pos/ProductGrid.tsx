@@ -1,5 +1,4 @@
 'use client';
-import { Plus } from 'lucide-react';
 import type { Produk } from '@/types';
 import { formatRupiah } from '@/utils/format';
 import { EmptyState, ProductImage } from '@/components/ui';
@@ -7,59 +6,70 @@ import { ProductGridSkeleton } from '@/components/ui/Skeleton';
 import { productImage } from '@/utils/image';
 import { cn } from '@/utils/cn';
 
-interface Props { produk: Produk[]; loading?: boolean; onAdd: (p: Produk) => void; }
+interface Props {
+  produk: Produk[];
+  loading?: boolean;
+  onAdd: (p: Produk) => void;
+  /** Jumlah qty per id_produk yang sudah ada di keranjang (indikator di kartu). */
+  inCart?: Record<number, number>;
+}
 
-export function ProductGrid({ produk, loading, onAdd }: Props) {
-  if (loading) return <ProductGridSkeleton count={10} />;
+// Kolom mengikuti lebar area (auto-fill), bukan breakpoint layar: area produk
+// menyempit saat panel keranjang tampil, jadi breakpoint viewport tidak akurat.
+export const PRODUCT_GRID_COLS = 'grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5 sm:gap-3';
+
+// Stok normal ditulis netral; warna hanya untuk kondisi yang perlu perhatian.
+function stockText(p: Produk) {
+  const unit = p.satuan?.NAMA ? ` ${p.satuan.NAMA}` : '';
+  if (p.STOK <= 0) return { text: 'Stok habis', cls: 'font-semibold text-rose-600 dark:text-rose-300' };
+  if (p.STOK <= 10) return { text: `Sisa ${p.STOK}${unit}`, cls: 'font-semibold text-amber-700' };
+  return { text: `Stok ${p.STOK}${unit}`, cls: 'text-slate-500' };
+}
+
+export function ProductGrid({ produk, loading, onAdd, inCart }: Props) {
+  if (loading) return <ProductGridSkeleton count={12} />;
   if (!produk.length) return <EmptyState title="Produk tidak ditemukan" description="Coba kata kunci atau kategori lain." />;
 
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+    <div className={PRODUCT_GRID_COLS}>
       {produk.map((p) => {
         const habis = p.STOK <= 0;
-        const stockTone = habis
-          ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300'
-          : p.STOK <= 10
-            ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-            : 'bg-brand-50 text-brand-700 dark:bg-accent/15 dark:text-accent';
+        const qty = inCart?.[p.ID] ?? 0;
+        const stock = stockText(p);
 
         return (
           <button
             key={p.ID}
+            type="button"
             disabled={habis}
             onClick={() => onAdd(p)}
+            aria-label={`Tambah ${p.NAMA}, ${formatRupiah(p.HARGA_JUAL)}${qty ? `, ${qty} di keranjang` : ''}`}
             className={cn(
-              'group flex flex-col rounded-2xl border bg-white p-3 text-left shadow-card transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-60',
-              habis ? 'border-slate-200' : 'border-brand-200 hover:-translate-y-0.5 hover:border-primary hover:shadow-soft',
+              'group relative flex flex-col overflow-hidden rounded-xl border bg-white text-left transition-[border-color,box-shadow] duration-150',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1',
+              'disabled:cursor-not-allowed',
+              qty > 0 ? 'border-primary shadow-card' : 'border-line',
+              !habis && 'hover:border-primary hover:shadow-soft active:bg-brand-50',
             )}
           >
-            <div className="relative flex aspect-[5/4] w-full items-center justify-center overflow-hidden rounded-xl bg-white">
+            <div className="relative aspect-[16/10] w-full border-b border-slate-100 bg-slate-50">
               <ProductImage
                 src={productImage(p)}
-                alt={p.NAMA}
+                alt=""
                 loading="lazy"
-                className="h-full w-full !object-contain p-2 transition-transform duration-200 group-hover:scale-[1.03]"
+                className={cn('absolute inset-0 h-full w-full !object-contain p-2', habis && 'opacity-40 grayscale')}
               />
-              {habis && (
-                <div className="absolute inset-0 flex items-center justify-center bg-white/70">
-                  <span className="rounded-full bg-slate-800/80 px-3 py-1 text-xs font-semibold text-white">Stok habis</span>
-                </div>
+              {qty > 0 && (
+                <span className="absolute right-2 top-2 flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold tabular-nums text-white">
+                  {qty}
+                </span>
               )}
             </div>
 
-            <div className="mt-2.5 flex flex-col">
-              <p className="line-clamp-1 text-sm font-bold leading-snug text-slate-900 sm:text-[15px]">{p.NAMA}</p>
-              <span className={cn('mt-1 w-fit rounded-full px-2.5 py-1 text-[11px] font-semibold', stockTone)}>
-                Stok {p.STOK}{p.satuan?.NAMA ? ` ${p.satuan.NAMA}` : ''}
-              </span>
-              <div className="mt-2 flex items-end justify-between gap-2">
-                <span className="text-sm font-bold leading-tight text-slate-900 sm:text-base">{formatRupiah(p.HARGA_JUAL)}</span>
-                {!habis && (
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent/20 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                    <Plus className="h-4 w-4" />
-                  </span>
-                )}
-              </div>
+            <div className="flex flex-1 flex-col px-3 pb-3 pt-2.5">
+              <p className={cn('line-clamp-2 text-sm font-semibold leading-5', habis ? 'text-slate-500' : 'text-slate-900')}>{p.NAMA}</p>
+              <p className={cn('mt-1 text-xs', stock.cls)}>{stock.text}</p>
+              <p className={cn('mt-auto pt-1.5 text-[15px] font-bold tabular-nums', habis ? 'text-slate-500' : 'text-ink')}>{formatRupiah(p.HARGA_JUAL)}</p>
             </div>
           </button>
         );

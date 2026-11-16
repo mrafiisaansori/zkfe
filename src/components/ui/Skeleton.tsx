@@ -4,15 +4,18 @@ export function Skeleton({ className }: { className?: string }) {
   return <div className={cn('zk-skeleton', className)} />;
 }
 
-// Skeleton grid produk untuk halaman POS.
+// Skeleton grid produk untuk halaman POS — proporsi sama dengan kartu di ProductGrid.
 export function ProductGridSkeleton({ count = 10 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2.5 sm:gap-3">
       {Array.from({ length: count }).map((_, i) => (
-        <div key={i} className="rounded-3xl border border-line/80 bg-white p-3 shadow-premium">
-          <Skeleton className="mb-3 aspect-square w-full rounded-2xl" />
-          <Skeleton className="mb-2 h-4 w-3/4" />
-          <Skeleton className="h-4 w-1/2" />
+        <div key={i} className="overflow-hidden rounded-xl border border-line bg-white">
+          <Skeleton className="aspect-[16/10] w-full rounded-none" />
+          <div className="px-3 pb-3 pt-2.5">
+            <Skeleton className="mb-2 h-4 w-3/4" />
+            <Skeleton className="mb-3 h-3 w-1/3" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
         </div>
       ))}
     </div>
