@@ -25,7 +25,8 @@ export function UserForm({ initial, loading, onSubmit, onCancel }: Props) {
         label="Role"
         value={level ?? 2}
         onChange={(v) => setValue('level', Number(v) as 2 | 3, { shouldValidate: true })}
-        options={[{ value: 2, label: 'Kasir' }, { value: 3, label: 'Gudang' }]}
+        // Gudang tidak bisa dipilih lagi; hanya tampil bila pengguna ini memang sudah Gudang (agar tidak turun role diam-diam).
+        options={initial?.LEVEL === 3 ? [{ value: 2, label: 'Kasir' }, { value: 3, label: 'Gudang' }] : [{ value: 2, label: 'Kasir' }]}
       />
       <p className="-mt-1 text-xs text-slate-400">
         {level === 3
